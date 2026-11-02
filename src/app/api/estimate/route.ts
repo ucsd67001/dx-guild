@@ -1,4 +1,4 @@
-import { estimateEffect } from "@/lib/ai";
+import { AiSetupError, estimateEffect } from "@/lib/ai";
 
 // 投稿フォームの「AI に見積もってもらう」。回数・分・人数・削減率の前提だけを返す（計算は画面で）
 export async function POST(req: Request) {
@@ -10,6 +10,7 @@ export async function POST(req: Request) {
     return Response.json(await estimateEffect(kind, text));
   } catch (e) {
     console.error(e);
-    return Response.json({ error: "見積もれませんでした。少し待って、もう一度お試しください" }, { status: 500 });
+    const error = e instanceof AiSetupError ? e.message : "見積もれませんでした。少し待って、もう一度お試しください";
+    return Response.json({ error }, { status: 500 });
   }
 }

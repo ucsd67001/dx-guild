@@ -55,15 +55,16 @@ export function fmtDate(s: string) {
 }
 
 // ── プロダクト ─────────────────────────────
-// ⚠️ 名前を替えるときは、ここと README・CLAUDE.md・docs/hackathon.md
+// ⚠️ 名前を替えるときは、ここと README・CLAUDE.md・docs/hackathon.md・AI の指示（ai.ts）
 export const PRODUCT = {
-  name: "QuestForge",
-  kana: "クエストフォージ",
+  name: "DXギルド",
+  en: "DX GUILD",
   tagline: "悩みを、クエストに。閃きを、成果に。",
+  version: "v0.3",
 };
 
 // 効果をお金に換える時間単価（円／時間）。社内の基準に合わせて .env.local で替える
-export const HOURLY_COST = Number(process.env.QF_HOURLY_COST) || 5000;
+export const HOURLY_COST = Number(process.env.DXG_HOURLY_COST) || 5000;
 
 export function yen(n: number) {
   return `${Math.round(n).toLocaleString()}円`;

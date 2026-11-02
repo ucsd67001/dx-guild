@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { IBM_Plex_Mono, IBM_Plex_Sans_JP } from "next/font/google";
 import "./globals.css";
+import { PRODUCT } from "@/lib/constants";
 import { getCurrentUser, listUsers } from "@/lib/data";
 import { switchUser } from "@/lib/actions";
 import { getAdventurer } from "@/lib/game";
@@ -19,7 +20,7 @@ const sans = IBM_Plex_Sans_JP({
 const mono = IBM_Plex_Mono({ weight: ["400", "500", "600"], subsets: ["latin"], variable: "--font-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  title: { default: "QuestForge — 悩みを、クエストに。閃きを、成果に。", template: "%s ｜ QuestForge" },
+  title: { default: `${PRODUCT.name} — ${PRODUCT.tagline}`, template: `%s ｜ ${PRODUCT.name}` },
   description: "IT Div. の困りごとから、AI との壁打ちで解決策を企画し、成功事例を探し、共有して横展開するためのコミュニティ。",
 };
 
@@ -32,8 +33,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <div className="backdrop" aria-hidden />
         <header className="header">
           <div className="wrap header__inner">
-            <Link href="/" className="logo" aria-label="QuestForge ホーム">
-              <span className="logo__word">QuestForge</span>
+            <Link href="/" className="logo" aria-label={`${PRODUCT.name} ホーム`}>
+              <span className="logo__word">{PRODUCT.name}</span>
               <span className="logo__dot" />
               <span className="logo__sub">IT DIV.<br />IDEA &amp; SOLUTION GUILD</span>
             </Link>
@@ -55,8 +56,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <main>{children}</main>
         <footer className="footer">
           <div className="wrap footer__inner">
-            <span className="mono dim">QUESTFORGE / v0.2 — LOCAL PROTOTYPE</span>
-            <span className="dim">悩みを、クエストに。閃きを、成果に。</span>
+            <span className="mono dim">{PRODUCT.en} / {PRODUCT.version} — LOCAL PROTOTYPE</span>
+            <span className="dim">{PRODUCT.tagline}</span>
           </div>
         </footer>
       </body>

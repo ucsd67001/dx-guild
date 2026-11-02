@@ -1,6 +1,6 @@
 import { getCurrentUser } from "@/lib/data";
 import { getForgeSession, saveMessages, searchCases } from "@/lib/forge";
-import { aiConnected, sageReply, type ChatMessage } from "@/lib/ai";
+import { AiSetupError, aiConnected, sageReply, type ChatMessage } from "@/lib/ai";
 
 // 賢者との対話の一往復。返事は少しずつ（テキストのストリームで）返し、最後に記録する。
 // message が空なら、賢者の最初のひとこと（悩みへの問いかけ）だけを返す
@@ -30,7 +30,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         saveMessages(session.id, [...history, { role: "assistant", content: reply }], demo);
       } catch (e) {
         console.error(e);
-        controller.enqueue(encoder.encode("\n（賢者との通信がとぎれました。少し待って、もう一度送ってください）"));
+        const note = e instanceof AiSetupError ? e.message : "賢者との通信がとぎれました。少し待って、もう一度送ってください";
+        controller.enqueue(encoder.encode(`\n（${note}）`));
       } finally {
         controller.close();
       }

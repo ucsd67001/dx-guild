@@ -69,7 +69,7 @@ export function getTeam(id: number): Team | undefined {
   return db.prepare("SELECT * FROM teams WHERE id = ?").get(id) as Team | undefined;
 }
 
-export const USER_COOKIE = "yk_uid";
+export const USER_COOKIE = "dg_uid";
 
 // ⚠️ ログインはまだ無い。画面の右上で「だれとして使うか」を選び、クッキーに持つだけ。
 //    社内に出すときは、ここを Entra ID などのログインに替える

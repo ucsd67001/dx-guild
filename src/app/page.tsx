@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getCurrentUser, getStats, listFlows, listPosts, listTeamSummaries } from "@/lib/data";
+import { PRODUCT } from "@/lib/constants";
 import { FlowMap } from "@/components/FlowMap";
 import { PostCard } from "@/components/PostCard";
 
@@ -17,7 +18,7 @@ export default async function Home() {
           <div className="hero__copy">
             <p className="eyebrow">
               <span className="eyebrow__dot" />
-              QUESTFORGE / IT DIV. IDEA &amp; SOLUTION GUILD
+              {PRODUCT.en} / IT DIV. IDEA &amp; SOLUTION GUILD
             </p>
             <h1 className="hero__title">
               悩みを、<span className="hero__accent">クエスト</span>に。

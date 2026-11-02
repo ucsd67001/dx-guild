@@ -1,4 +1,4 @@
-# QuestForge（クエストフォージ）
+# DXギルド
 
 > 悩みを、クエストに。閃きを、成果に。
 
@@ -9,7 +9,7 @@ IT Div. の中で、**困りごと**（手作業・時間を取られている�
 まだ悩みの段階でも始められる。**成功事例を探し**、なければ **AI の「賢者」と壁打ちして解決策を企画し**、
 **共有して広げる**。その行いが経験値になり、管理者は成果を数字で見られる。
 
-いまは**ローカルで動かす試作**（v0.2）。ログインは無く、右上で「だれとして使うか」を選ぶ。
+いまは**ローカルで動かす試作**（v0.3）。ログインは無く、右上で「だれとして使うか」を選ぶ。
 社内ハッカソンの応募文は [`docs/hackathon.md`](docs/hackathon.md)。
 
 ---
@@ -21,7 +21,7 @@ IT Div. の中で、**困りごと**（手作業・時間を取られている�
 - 別のチームが、同じことを別々にやっている（同じ困りごと、同じ仕組みの作り直し）
 - どれだけの時間が失われ、どれだけ減らせたのかが見えない
 
-## できること（v0.2）
+## できること（v0.3）
 
 | 画面 | 中身 |
 |---|---|
@@ -69,18 +69,23 @@ npm run dev
 
 http://localhost:3000 を開く。
 
-- DB は `data/yokoten.db`（SQLite・git に入れない）。**初めて開いたときに、見本データで作られる**
+- DB は `data/dx-guild.db`（SQLite・git に入れない）。**初めて開いたときに、見本データで作られる**
 - 見本データに戻したいとき：開発サーバーを止めてから `npm run db:reset` → もう一度 `npm run dev`
 - 確かめ：`npm run typecheck` ／ `npm run lint`
 
 ### AI（賢者）をつなぐ
 
-`.env.example` を写して `.env.local` を作り、`ANTHROPIC_API_KEY=` のあとに Claude の API キーを入れて、開発サーバーを起動し直す。
+AI は **GEMu_Web と同じ OpenAI の API**（`chat.completions`）を使う。
+`.env.example` を写して `.env.local` を作り、`OPENAI_API_KEY=` のあとに OpenAI の API キー（`sk-` で始まる）を入れて、開発サーバーを起動し直す。
+
+```powershell
+Copy-Item .env.example .env.local; notepad .env.local
+```
 
 - **鍵が無くても動く。**そのときの賢者は「デモ」の決まった返事をし、画面にもデモと出る
-- モデルは `claude-opus-5-5`（`QF_MODEL` で替えられる）
-- **フォールバックを有効にしている**（`fallbacks: "default"`）。モデルが答えを断ったとき、別のモデルが続きを答える。料金は答えたモデルの分
-- 時間単価は `QF_HOURLY_COST`（円）
+- モデルは GEMu_Web と同じ `gpt-4.1-mini`（`DXG_MODEL` で替えられる）。gpt-5 以降の考えるモデルに替えるときは、`DXG_REASONING_EFFORT` で考える量も決められる
+- 企画書と見積もりは、OpenAI の「決まった形で返す」機能（Structured Outputs）で受け取り、さらに zod で確かめる
+- 時間単価は `DXG_HOURLY_COST`（円）
 
 ## 作り
 
@@ -88,7 +93,7 @@ http://localhost:3000 を開く。
 |---|---|
 | 画面とサーバー | Next.js 16（App Router・Server Actions）＋ TypeScript |
 | DB | SQLite（better-sqlite3）。表の定義は `src/lib/db.ts`、見本データは `src/lib/seed.ts` |
-| AI | Claude（`@anthropic-ai/sdk`）。壁打ちは流しながら返す（streaming）、企画書と見積もりは形を決めて受け取る（zod） |
+| AI | OpenAI（`openai` パッケージ）。壁打ちは流しながら返す（streaming）、企画書と見積もりは形を決めて受け取る（Structured Outputs ＋ zod） |
 | 見た目 | 手書きの CSS 一枚（`src/app/globals.css`）。頭に考え方を書いてある |
 
 ```
@@ -105,7 +110,7 @@ src/
     seed.ts         見本データ（チームも人も架空）
     data.ts         読み出し（画面から呼ぶ）
     actions.ts      書き込み（投稿・リアクション・横展開・コメント・工房の開始と共有）
-    ai.ts           賢者のプロンプトと、Claude の呼び出し・デモの返事
+    ai.ts           賢者のプロンプトと、OpenAI の呼び出し・デモの返事
     forge.ts        工房の対話の読み書き・社内の似た事例を探す
     game.ts         経験値・レベル・称号・バッジ・ギルド
     admin.ts        司令室の集計
@@ -123,7 +128,7 @@ src/
 ## 次に考えること
 
 - ログイン（社内に出すなら Entra ID など）。いまの「人の切り替え」は試作のためだけ
-- 社内で使える AI に替える（Azure OpenAI など）。呼び出しは `src/lib/ai.ts` に集めてある
+- 社内で使える AI に替える（Azure OpenAI なら、`ai.ts` の接続先を替えるだけで済む作り）。呼び出しは `src/lib/ai.ts` に集めてある
 - 置き場所（社内のサーバー・Azure など）と、それに合わせた DB
 - 似た事例の探し方を、言葉の重なりから意味で探す形（埋め込み）にする
 - 解決策の「中身」の受け渡し（フローのパッケージ・プロンプト集などのファイルを添える）

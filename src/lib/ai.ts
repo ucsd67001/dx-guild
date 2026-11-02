@@ -1,26 +1,93 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
+import OpenAI from "openai";
 import { z } from "zod";
-import { CATEGORIES, postCode, type EffortInput } from "./constants";
+import { CATEGORIES, PRODUCT, postCode, type EffortInput } from "./constants";
 import type { Post } from "./data";
 
 // ============================================================
-// 賢者（AI）。Claude を使う。
-// ・鍵は .env.local の ANTHROPIC_API_KEY。無いときは「デモの応答」で画面の流れだけを見せる
-// ・断られたとき（refusal）は、別のモデルが続きを答える（fallbacks: "default"）
+// 賢者（AI）。GEMu_Web と同じく OpenAI の API（chat.completions）を使う。
+// ・鍵は .env.local の OPENAI_API_KEY。無いときは「デモの応答」で画面の流れだけを見せる
+// ・モデルは GEMu_Web と同じ gpt-4.1-mini。DXG_MODEL で替えられる
 // ・数字の計算はさせない。前提（回数・分・人数・削減率）だけを出させ、計算は calcEffect で
 // ============================================================
 
-export const MODEL = process.env.QF_MODEL || "claude-opus-5-5";
-const FALLBACK_BETA = "server-side-fallback-2026-07-01";
+export const MODEL = process.env.DXG_MODEL || "gpt-4.1-mini";
 
-export function aiConnected() {
-  return !!(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+// 考える量（gpt-5 以降の、考えるモデルに替えたときだけ使う。gpt-4.1-mini に渡すと断られる）
+const EFFORTS = ["none", "minimal", "low", "medium", "high"] as const;
+const effortEnv = process.env.DXG_REASONING_EFFORT as (typeof EFFORTS)[number] | undefined;
+const REASONING = effortEnv && EFFORTS.includes(effortEnv) ? { reasoning_effort: effortEnv } : {};
+
+// ⚠️ 前後の空白と改行を落とす（ファイルから写すと末尾に改行が混ざり、認証で弾かれる。GEMu_Web で踏んだ）
+function apiKey() {
+  return String(process.env.OPENAI_API_KEY || "").trim();
 }
 
-let client: Anthropic | undefined;
+export function aiConnected() {
+  return apiKey() !== "";
+}
+
+// 設定の誤り。画面にそのまま出してよい（鍵の値は含めない）
+export class AiSetupError extends Error {}
+
+let client: OpenAI | undefined;
 function getClient() {
-  return (client ??= new Anthropic());
+  if (!client) {
+    const key = apiKey();
+    // ⚠️ 形だけ見る。鍵の中身は、ログにも画面にも出さない
+    if (!key.startsWith("sk-")) {
+      throw new AiSetupError("OPENAI_API_KEY が鍵の形をしていません（sk- で始まっていません）。.env.local を見直してください。");
+    }
+    client = new OpenAI({ apiKey: key });
+  }
+  return client;
+}
+
+// zod の形を、OpenAI の「決まった形で返す」（strict な JSON Schema）に渡せる形にする。
+// zod は、すべての項目を必須にし、余分な項目を許さない形で出す（strict の条件）。
+// 整数の上下限など、余計な決まりは外す
+function jsonSchema(name: string, schema: z.ZodType) {
+  const strip = (node: unknown): unknown => {
+    if (Array.isArray(node)) return node.map(strip);
+    if (node && typeof node === "object") {
+      const out: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(node)) {
+        if (k === "$schema" || k === "minimum" || k === "maximum") continue;
+        out[k] = strip(v);
+      }
+      return out;
+    }
+    return node;
+  };
+  return {
+    type: "json_schema" as const,
+    json_schema: { name, strict: true, schema: strip(z.toJSONSchema(schema)) as Record<string, unknown> },
+  };
+}
+
+// 決まった形で一回だけ聞く（企画書・見積もり）
+async function askStructured<T extends z.ZodType>(
+  name: string,
+  schema: T,
+  system: string,
+  user: string,
+  maxTokens: number,
+): Promise<z.infer<T>> {
+  const res = await getClient().chat.completions.create({
+    model: MODEL,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+    max_completion_tokens: maxTokens,
+    response_format: jsonSchema(name, schema),
+    ...REASONING,
+  });
+  const choice = res.choices[0];
+  if (choice?.message.refusal) throw new Error("この内容には、賢者は答えられませんでした。");
+  if (choice?.finish_reason === "length") throw new Error("答えが長すぎて、途中で切れました。もう一度お試しください。");
+  const parsed = schema.safeParse(JSON.parse(choice?.message.content ?? "null"));
+  if (!parsed.success) throw new Error("答えの形が崩れていました。もう一度お試しください。");
+  return parsed.data;
 }
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -81,7 +148,7 @@ export function toEffort(e: Plan["solutions"][number]["estimate"]): EffortInput 
 
 // ── 指示 ───────────────────────────────────
 
-const SAGE_SYSTEM = `あなたは、IT 部門の社内コミュニティ「QuestForge」にいる「賢者」です。
+const SAGE_SYSTEM = `あなたは、IT 部門の社内コミュニティ「${PRODUCT.name}」にいる「賢者」です。
 社員の、ちょっとした業務上の悩みや不満を一緒に掘り下げ、本人が自分で解決策を思いつけるように手伝う、壁打ちの相手です。
 
 進め方
@@ -98,7 +165,7 @@ const SAGE_SYSTEM = `あなたは、IT 部門の社内コミュニティ「Quest
 - 日本語の、です・ます調。1回の返答は200字程度まで。
 - 見出し・表・箇条書きの記号は使わず、ふつうの文で話します。`;
 
-const PLAN_SYSTEM = `あなたは、IT 部門の社内コミュニティ「QuestForge」の「賢者」です。
+const PLAN_SYSTEM = `あなたは、IT 部門の社内コミュニティ「${PRODUCT.name}」の「賢者」です。
 社員との壁打ちの記録をもとに、悩みを「あるべき姿・現状・問題・課題・解決策」に整理した企画書を作ります。
 
 - 記録に無い事実を作りません。足りない数字は、IT 部門でよくある値を推定し、推定であることを assumptions に書きます。
@@ -139,44 +206,40 @@ export async function* sageReply(worry: string, history: ChatMessage[], cases: P
     yield* demoReply(worry, history, cases);
     return;
   }
-  // 最初の悩みを、最初の発言として渡す
-  const messages: Anthropic.Beta.Messages.BetaMessageParam[] = [
-    { role: "user", content: worry },
-    ...history.map((m) => ({ role: m.role, content: m.content })),
-  ];
-  const stream = getClient().beta.messages.stream({
+  // 指示を先頭に置き、最初の悩みを最初の発言として渡す
+  // （先頭が毎回同じなので、OpenAI 側の自動のキャッシュが効く）
+  const stream = await getClient().chat.completions.create({
     model: MODEL,
-    max_tokens: 16000,
-    betas: [FALLBACK_BETA],
-    fallbacks: "default",
-    output_config: { effort: "low" },
-    system: [{ type: "text", text: `${SAGE_SYSTEM}\n\n${casesText(cases)}`, cache_control: { type: "ephemeral" } }],
-    messages,
+    stream: true,
+    messages: [
+      { role: "system", content: `${SAGE_SYSTEM}\n\n${casesText(cases)}` },
+      { role: "user", content: worry },
+      ...history.map((m) => ({ role: m.role, content: m.content })),
+    ],
+    max_completion_tokens: 2000,
+    ...REASONING,
   });
-  for await (const ev of stream) {
-    if (ev.type === "content_block_delta" && ev.delta.type === "text_delta") yield ev.delta.text;
+  let refused = false;
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta;
+    if (delta?.content) yield delta.content;
+    if (delta?.refusal) refused = true;
   }
-  const final = await stream.finalMessage();
-  if (final.stop_reason === "refusal") yield "\n（この内容には、賢者は答えられませんでした。言い方を変えてみてください）";
+  if (refused) yield "\n（この内容には、賢者は答えられませんでした。言い方を変えてみてください）";
 }
 
 // ── 企画書 ──────────────────────────────────
 
 export async function makePlan(worry: string, history: ChatMessage[], cases: Post[]): Promise<Plan> {
   if (!aiConnected()) return demoPlan(worry, history, cases);
-  const res = await getClient().beta.messages.parse({
-    model: MODEL,
-    max_tokens: 16000,
-    betas: [FALLBACK_BETA],
-    fallbacks: "default",
-    output_config: { effort: "medium", format: betaZodOutputFormat(PlanSchema) },
-    system: [{ type: "text", text: `${PLAN_SYSTEM}\n\n${casesText(cases)}` }],
-    messages: [{ role: "user", content: `次の壁打ちの記録を、企画書にまとめてください。\n\n${transcript(worry, history)}` }],
-  });
-  if (res.stop_reason === "refusal" || !res.parsed_output) {
-    throw new Error("企画書をまとめられませんでした。対話を少し足してから、もう一度お試しください。");
-  }
-  const plan = res.parsed_output;
+  const plan = await askStructured(
+    "plan",
+    PlanSchema,
+    `${PLAN_SYSTEM}\n\n${casesText(cases)}`,
+    `次の壁打ちの記録を、企画書にまとめてください。\n\n${transcript(worry, history)}`,
+    8000,
+  );
+  if (!plan.solutions.length) throw new Error("解決策の案が出ませんでした。対話を少し足してから、もう一度お試しください。");
   // 一覧に無い事例の番号を、念のため落とす
   const known = new Set(cases.map((c) => c.id));
   plan.related_case_ids = plan.related_case_ids.filter((id) => known.has(id));
@@ -199,17 +262,13 @@ export async function estimateEffect(kind: "problem" | "solution", text: string)
       assumptions: "デモの見積もりです（AI につながっていません）。文章の中の数字を拾い、無いものは月20回・30分・1人・削減率5〜6割と置きました。",
     };
   }
-  const res = await getClient().beta.messages.parse({
-    model: MODEL,
-    max_tokens: 8000,
-    betas: [FALLBACK_BETA],
-    fallbacks: "default",
-    output_config: { effort: "low", format: betaZodOutputFormat(EstimateSchema) },
-    system: ESTIMATE_SYSTEM,
-    messages: [{ role: "user", content: `種類：${kind === "problem" ? "困りごと" : "解決策"}\n\n${text}` }],
-  });
-  if (!res.parsed_output) throw new Error("見積もれませんでした");
-  return res.parsed_output;
+  return askStructured(
+    "estimate",
+    EstimateSchema,
+    ESTIMATE_SYSTEM,
+    `種類：${kind === "problem" ? "困りごと" : "解決策"}\n\n${text}`,
+    1500,
+  );
 }
 
 // ============================================================
@@ -279,7 +338,7 @@ function demoPlan(worry: string, history: ChatMessage[], cases: Post[]): Plan {
           { title: "手順を書き出す", detail: "いまのやり方を5〜10行で書き、判断が要る所に印をつける", duration: "2日" },
           { title: "小さく作る", detail: "いちばん回数の多い部分だけをフローにする", duration: "1週間" },
           { title: "並行して試す", detail: "2週間、手作業と並べて結果を比べる", duration: "2週間" },
-          { title: "共有する", detail: "結果を QuestForge に解決策として投稿する", duration: "1日" },
+          { title: "共有する", detail: `結果を ${PRODUCT.name} に解決策として投稿する`, duration: "1日" },
         ],
         difficulty: "易しい",
         estimate: est(0.5, "定型部分の自動化"),

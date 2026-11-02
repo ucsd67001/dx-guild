@@ -36,7 +36,7 @@ export default async function Forge() {
           <WorryForm action={startForge} />
           <p className={`ai-status mono${aiConnected() ? " is-on" : ""}`}>
             <i aria-hidden />
-            {aiConnected() ? `SAGE ONLINE · ${MODEL}` : "DEMO MODE · AI 未接続（.env.local に ANTHROPIC_API_KEY）"}
+            {aiConnected() ? `SAGE ONLINE · ${MODEL}` : "DEMO MODE · AI 未接続（.env.local に OPENAI_API_KEY）"}
           </p>
         </div>
       </div>

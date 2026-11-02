@@ -3,9 +3,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { seed } from "./seed";
 
-// ローカルでは data/yokoten.db に置く（git には入れない）。
+// ローカルでは data/dx-guild.db に置く（git には入れない）。
 // 消せば、次に開いたときに見本データで作り直される（npm run db:reset）。
-const DB_PATH = path.join(process.cwd(), "data", "yokoten.db");
+const DB_PATH = path.join(process.cwd(), "data", "dx-guild.db");
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS teams (
@@ -97,7 +97,7 @@ function open() {
 
 // 開発サーバーは書き換えのたびにこのファイルを読み直すので、接続は一つを使い回す
 declare global {
-  var __yokotenDb: Database.Database | undefined;
+  var __dxGuildDb: Database.Database | undefined;
 }
 
-export const db: Database.Database = globalThis.__yokotenDb ?? (globalThis.__yokotenDb = open());
+export const db: Database.Database = globalThis.__dxGuildDb ?? (globalThis.__dxGuildDb = open());
