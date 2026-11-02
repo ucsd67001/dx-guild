@@ -21,13 +21,13 @@ export default async function Home() {
               {PRODUCT.en} / IT DIV. IDEA &amp; SOLUTION GUILD
             </p>
             <h1 className="hero__title">
-              悩みを、<span className="hero__accent">クエスト</span>に。
+              ひとりの成功を、
               <br />
-              閃きを、成果に<span className="hero__dot">.</span>
+              <span className="hero__accent">みんな</span>の成果に<span className="hero__dot">.</span>
             </h1>
             <p className="lead">
-              「なんかめんどう」から始めていい。社内の成功事例を探し、賢者（AI）と壁打ちして解決策を企画し、
-              共有して横へ広げる。IT Div. の閃きと成果を、量産するギルドです。
+              悩んだら、まずギルドへ。成功事例をそのまま真似る、事例から閃く、賢者（AI）と壁打ちする。
+              やってみて成功したら、次のだれかが使える事例として残す。IT Div. の成果を、みんなで量産するギルドです。
             </p>
             <div className="hero__actions">
               <Link href="/forge" className="btn btn--primary">

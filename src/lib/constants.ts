@@ -59,7 +59,7 @@ export function fmtDate(s: string) {
 export const PRODUCT = {
   name: "DXギルド",
   en: "DX GUILD",
-  tagline: "悩みを、クエストに。閃きを、成果に。",
+  tagline: "ひとりの成功を、みんなの成果に。",
   version: "v0.3",
 };
 
