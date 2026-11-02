@@ -30,7 +30,7 @@ export default function Teams() {
             <tr>
               <th>チーム</th>
               <th className="num">困りごと</th>
-              <th className="num">解決策</th>
+              <th className="num" title="挑戦中・成功事例・学びの数">挑戦・事例</th>
               <th className="num" title="このチームの解決策を、よそのチームが取り入れた数">広げた</th>
               <th className="num" title="よそのチームの解決策を、このチームが取り入れた数">取り入れた</th>
             </tr>

@@ -5,13 +5,15 @@ import { db } from "./db";
 
 export const XP_RULES = [
   { key: "problems", label: "クエスト（困りごと）を出した", xp: 10 },
-  { key: "solutions", label: "解決策を共有した", xp: 30 },
-  { key: "bounty", label: "クエストの報酬（困りごとに答えた解決策）", xp: 0 }, // 報酬は困りごとごとに違う
+  { key: "challenges", label: "挑戦を共有した", xp: 15 },
+  { key: "successes", label: "挑戦が成功し、成功事例になった", xp: 30 },
+  { key: "lessons", label: "うまくいかなかった挑戦を、学びとして残した", xp: 10 },
+  { key: "bounty", label: "クエストの報酬（困りごとを成功事例で解決した）", xp: 0 }, // 報酬は困りごとごとに違う
   { key: "given", label: "自分の解決策が、よそのチームに横展開された", xp: 50 },
   { key: "taken", label: "よそのチームの解決策を取り入れた", xp: 20 },
   { key: "plans", label: "賢者と企画書をまとめた", xp: 15 },
-  { key: "reactionsReceived", label: "「うちも」「使いたい」をもらった", xp: 3 },
-  { key: "reactionsGiven", label: "「うちも」「使いたい」を押した", xp: 1 },
+  { key: "reactionsReceived", label: "「うちも」「一緒に」「使いたい」「参考になった」をもらった", xp: 3 },
+  { key: "reactionsGiven", label: "それらを押した", xp: 1 },
   { key: "comments", label: "コメントした", xp: 2 },
 ] as const;
 
@@ -41,12 +43,13 @@ export type Badge = { key: string; name: string; desc: string; rune: string };
 
 const BADGES: (Badge & { test: (c: Counts) => boolean })[] = [
   { key: "first-quest", name: "はじまりの依頼", desc: "はじめてクエストを出した", rune: "Ⅰ", test: (c) => c.problems >= 1 },
-  { key: "first-scroll", name: "攻略者", desc: "はじめて解決策を共有した", rune: "Ⅱ", test: (c) => c.solutions >= 1 },
-  { key: "bounty", name: "依頼達成", desc: "困りごとに解決策で答えた", rune: "Ⅲ", test: (c) => c.bounty > 0 },
+  { key: "first-challenge", name: "挑戦者", desc: "はじめて挑戦を共有した", rune: "Ⅱ", test: (c) => c.challenges >= 1 },
+  { key: "bounty", name: "依頼達成", desc: "困りごとを成功事例で解決した", rune: "Ⅲ", test: (c) => c.bounty > 0 },
   { key: "missionary", name: "伝道師", desc: "解決策が3チーム以上に横展開された", rune: "Ⅳ", test: (c) => c.given >= 3 },
   { key: "border", name: "越境者", desc: "よそのチームの解決策を取り入れた", rune: "Ⅴ", test: (c) => c.taken >= 1 },
   { key: "sage", name: "賢者の弟子", desc: "賢者と企画書をまとめた", rune: "Ⅵ", test: (c) => c.plans >= 1 },
-  { key: "empathy", name: "共感の灯", desc: "「うちも」「使いたい」を5回押した", rune: "Ⅶ", test: (c) => c.reactionsGiven >= 5 },
+  { key: "empathy", name: "共感の灯", desc: "「うちも」「一緒に」「使いたい」を5回押した", rune: "Ⅶ", test: (c) => c.reactionsGiven >= 5 },
+  { key: "storyteller", name: "語り部", desc: "うまくいかなかった挑戦を、学びとして残した", rune: "Ⅷ", test: (c) => c.lessons >= 1 },
 ];
 
 export type Adventurer = {
@@ -68,10 +71,12 @@ export function listAdventurers(): Adventurer[] {
   const rows = db.prepare(`
     SELECT u.id AS userId, u.name, u.team_id AS teamId, t.name AS teamName, t.code AS teamCode,
       (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id AND p.kind = 'problem')  AS problems,
-      (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id AND p.kind = 'solution') AS solutions,
+      (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id AND p.kind = 'solution') AS challenges,
+      (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id AND p.stage = 'success') AS successes,
+      (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id AND p.stage = 'lesson')  AS lessons,
       (SELECT COALESCE(SUM(20 + 5 * (SELECT COUNT(*) FROM reactions r WHERE r.post_id = q.id AND r.type = 'metoo')), 0)
          FROM posts s JOIN posts q ON q.id = s.problem_id
-         WHERE s.author_id = u.id AND q.author_id <> u.id) AS bounty,
+         WHERE s.author_id = u.id AND s.stage = 'success' AND q.author_id <> u.id) AS bounty,
       (SELECT COUNT(*) FROM adoptions a JOIN posts s ON s.id = a.solution_id WHERE s.author_id = u.id) AS given,
       (SELECT COUNT(*) FROM adoptions a WHERE a.user_id = u.id) AS taken,
       (SELECT COUNT(*) FROM forge_sessions f WHERE f.user_id = u.id AND f.plan IS NOT NULL) AS plans,

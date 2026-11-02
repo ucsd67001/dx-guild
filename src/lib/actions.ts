@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "./db";
 import { getCurrentUser, getPost, USER_COOKIE } from "./data";
-import { CATEGORIES, STAGES, TOOLS, calcEffect } from "./constants";
+import { CATEGORIES, REACTION_OF, STAGES, TOOLS, calcEffect } from "./constants";
 import { getForgeSession } from "./forge";
 import { toEffort } from "./ai";
 
@@ -13,6 +13,12 @@ import { toEffort } from "./ai";
 
 function text(form: FormData, key: string, max: number) {
   return String(form.get(key) ?? "").trim().slice(0, max);
+}
+
+// 「月◯時間」の入力。0 より大きい数だけを、小数1けたに丸めて受け取る
+function hoursOf(form: FormData) {
+  const raw = Number(form.get("hours"));
+  return Number.isFinite(raw) && raw > 0 ? Math.min(Math.round(raw * 10) / 10, 9999) : null;
 }
 
 function id(form: FormData, key: string) {
@@ -49,14 +55,13 @@ export async function createPost(form: FormData) {
   const tools = [...new Set([...picked, ...words(text(form, "toolsOther", 200), 6)])].slice(0, 12);
   const tags = words(text(form, "tags", 200), 8);
 
-  const hoursRaw = Number(form.get("hours"));
-  const hours = Number.isFinite(hoursRaw) && hoursRaw > 0 ? Math.min(Math.round(hoursRaw * 10) / 10, 9999) : null;
+  const hours = hoursOf(form);
 
   let stage: string | null = null;
   let problemId: number | null = null;
   if (kind === "solution") {
     const s = String(form.get("stage"));
-    stage = s in STAGES ? s : "idea";
+    stage = s in STAGES ? s : "challenge";
     const pid = id(form, "problemId");
     if (pid && getPost(pid)?.kind === "problem") problemId = pid;
   }
@@ -72,13 +77,15 @@ export async function createPost(form: FormData) {
   redirect(`/posts/${result.lastInsertRowid}`);
 }
 
-// うちも困っている／うちでも使いたい（押すたびに付け外し）
+// うちも困っている／一緒にやりたい／うちでも使いたい・参考になった（押すたびに付け外し）
 export async function toggleReaction(form: FormData) {
   const me = await getCurrentUser();
   const postId = id(form, "postId");
   const post = postId ? getPost(postId) : undefined;
   if (!post) return;
-  const type = post.kind === "problem" ? "metoo" : "want";
+  const type = post.kind === "problem" ? "metoo" : REACTION_OF[post.stage ?? "challenge"];
+  // 自分の挑戦に「一緒にやりたい」は押せない
+  if (type === "join" && post.authorId === me.id) return;
 
   const removed = db.prepare("DELETE FROM reactions WHERE post_id = ? AND user_id = ? AND type = ?")
     .run(post.id, me.id, type);
@@ -93,8 +100,8 @@ export async function adoptSolution(form: FormData) {
   const me = await getCurrentUser();
   const postId = id(form, "postId");
   const post = postId ? getPost(postId) : undefined;
-  // 自分のチームの解決策は、横展開に数えない
-  if (!post || post.kind !== "solution" || post.teamId === me.teamId) return;
+  // 横展開できるのは成功事例だけ。自分のチームの解決策は、横展開に数えない
+  if (!post || post.stage !== "success" || post.teamId === me.teamId) return;
 
   db.prepare(`
     INSERT INTO adoptions (solution_id, team_id, user_id, note) VALUES (?, ?, ?, ?)
@@ -107,6 +114,28 @@ export async function withdrawAdoption(form: FormData) {
   const postId = id(form, "postId");
   if (!postId) return;
   db.prepare("DELETE FROM adoptions WHERE solution_id = ? AND team_id = ?").run(postId, me.teamId);
+  revalidatePath("/", "layout");
+}
+
+// 挑戦の結果を報告する（挑戦した本人だけ）。
+// 成功 → 成功事例（実際に減った時間に置き換える）／うまくいかなかった → 学びとして残す
+export async function reportResult(form: FormData) {
+  const me = await getCurrentUser();
+  const postId = id(form, "postId");
+  const post = postId ? getPost(postId) : undefined;
+  if (!post || post.stage !== "challenge" || post.authorId !== me.id) return;
+
+  const outcome = form.get("outcome") === "success" ? "success" : "lesson";
+  const note = text(form, "note", 2000);
+  // 学びは、次に試す人のための一言が要る（画面でも必須にしている）
+  if (outcome === "lesson" && !note) return;
+
+  const heading = outcome === "success" ? "■ 結果（成功）" : "■ 学んだこと（次に試す人へ）";
+  const day = new Date().toLocaleDateString("ja-JP");
+  const body = note ? `${post.body}\n\n${heading}　${day}\n${note}`.slice(0, 8000) : post.body;
+  const hours = outcome === "success" ? (hoursOf(form) ?? post.hours) : post.hours;
+
+  db.prepare("UPDATE posts SET stage = ?, body = ?, hours = ? WHERE id = ?").run(outcome, body, hours, post.id);
   revalidatePath("/", "layout");
 }
 
@@ -130,7 +159,7 @@ export async function startForge(form: FormData) {
   redirect(`/forge/${r.lastInsertRowid}`);
 }
 
-// 企画書を、困りごと（クエスト）と解決策（構想）の二つの投稿にして共有する
+// 企画書を、困りごと（クエスト）と解決策（挑戦中）の二つの投稿にして共有する
 export async function shareForge(form: FormData) {
   const me = await getCurrentUser();
   const sid = id(form, "sessionId");
@@ -161,7 +190,7 @@ export async function shareForge(form: FormData) {
     `■ 効果 → 成果 → インパクト\n効果：${pick.impact_path.output}\n成果：${pick.impact_path.outcome}\nインパクト：${pick.impact_path.impact}`,
     `■ 気をつけること\n${pick.risks.map((r) => `・${r}`).join("\n")}`,
     `■ 最初の一歩\n${plan.first_step}`,
-    "（賢者の工房でまとめた構想です。一緒に試してくれるチームを募集しています）",
+    "（賢者の工房でまとめて、挑戦を始めました。一緒にやりたい人を募集しています）",
   ].join("\n\n");
 
   const ids = db.transaction(() => {
@@ -171,7 +200,7 @@ export async function shareForge(form: FormData) {
     ).lastInsertRowid as number;
     const sol = insert.run(
       "solution", `${pick.name}：${plan.title}`.slice(0, 100), pick.summary.slice(0, 240), solutionBody, category,
-      JSON.stringify(pick.tools.slice(0, 12)), tags, effect.savedHours || null, "idea", p, me.id, me.teamId,
+      JSON.stringify(pick.tools.slice(0, 12)), tags, effect.savedHours || null, "challenge", p, me.id, me.teamId,
     ).lastInsertRowid as number;
     db.prepare("UPDATE forge_sessions SET problem_post_id = ?, solution_post_id = ?, updated_at = datetime('now') WHERE id = ?")
       .run(p, sol, s.id);

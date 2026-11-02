@@ -81,19 +81,19 @@ export default async function ForgeSessionPage({ params }: Props) {
           <div className="share">
             {s.solutionPostId ? (
               <p>
-                ✓ クエストとして共有しました：
+                ✓ 挑戦として共有しました：
                 {s.problemPostId && <Link href={`/posts/${s.problemPostId}`}>困りごと {postCode("problem", s.problemPostId)}</Link>}
                 {" ／ "}
-                <Link href={`/posts/${s.solutionPostId}`}>解決策（構想） {postCode("solution", s.solutionPostId)}</Link>
+                <Link href={`/posts/${s.solutionPostId}`}>挑戦 {postCode("solution", s.solutionPostId)}</Link>
               </p>
             ) : isMine ? (
               <form action={shareForge} className="share__form">
                 <input type="hidden" name="sessionId" value={s.id} />
                 <div>
-                  <b>この企画書を、クエストとして共有しますか？</b>
-                  <p className="small dim">困りごと（クエスト）と、おすすめの解決策（構想）の二つの投稿になります。同じ悩みのチームや、一緒に作ってくれる仲間が見つかります。</p>
+                  <b>この企画書で、挑戦を始めますか？</b>
+                  <p className="small dim">困りごと（クエスト）と、おすすめの解決策の「挑戦中」の二つの投稿になります。結果が出る前から共有するので、同じ悩みのチームや、一緒にやる仲間が見つかります。</p>
                 </div>
-                <button className="btn btn--primary">クエストとして共有する <span aria-hidden>→</span></button>
+                <button className="btn btn--primary">挑戦として共有する <span aria-hidden>→</span></button>
               </form>
             ) : null}
           </div>

@@ -37,8 +37,8 @@ export default async function NewPost({ searchParams }: { searchParams: Promise<
           <label className="kind-option kind-option--solution">
             <input type="radio" name="kind" value="solution" defaultChecked={kind === "solution"} />
             <span>
-              <b>解決策</b>
-              <small>ツールや AI でこう解いた、という工夫</small>
+              <b>挑戦・解決策</b>
+              <small>いま挑戦していること／こう解いた、という工夫</small>
             </span>
           </label>
         </fieldset>
@@ -60,13 +60,13 @@ export default async function NewPost({ searchParams }: { searchParams: Promise<
         <label className="field">
           <span className="field__label">
             <span className="only-problem">いまのやり方と、困っていること</span>
-            <span className="only-solution">やったこと・結果・横展開するときのポイント</span>
+            <span className="only-solution">やろうとしていること・やったこと・結果（挑戦中なら、手伝ってほしいことも）</span>
           </span>
           <textarea
             name="body"
             rows={9}
             maxLength={8000}
-            placeholder={"■ やったこと\n\n■ 結果\n\n■ 横展開するときのポイント"}
+            placeholder={"■ やろうとしていること（やったこと）\n\n■ 手伝ってほしいこと／結果\n\n■ 横展開するときのポイント"}
           />
         </label>
 
@@ -102,8 +102,8 @@ export default async function NewPost({ searchParams }: { searchParams: Promise<
 
         <div className="form__row only-solution">
           <label className="field">
-            <span className="field__label">段階</span>
-            <select name="stage" defaultValue="live">
+            <span className="field__label">段階（結果はあとから報告できます）</span>
+            <select name="stage" defaultValue="challenge">
               {Object.entries(STAGES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </label>

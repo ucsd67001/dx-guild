@@ -344,8 +344,8 @@ button { cursor: pointer; }
 .stat--accent .stat__value { color: var(--green-ink); }
 .stat--accent::before { content: ""; position: absolute; top: -1px; left: -1px; width: 48px; height: 3px; background: var(--green); }
 
-/* ── 三つの段 ─────────────────────────────── */
-.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 40px; }
+/* ── 四つの段 ─────────────────────────────── */
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; margin-top: 40px; }
 .step { border-top: 1px solid var(--line-2); padding-top: 16px; position: relative; }
 .step::before { content: ""; position: absolute; top: -1px; left: 0; width: 28px; height: 1px; background: var(--green); box-shadow: 0 0 0 0.5px var(--green); }
 .step__n { font-size: 12px; color: var(--green-ink); letter-spacing: 0.1em; }
@@ -462,6 +462,11 @@ button { cursor: pointer; }
   padding: 0 6px;
   border-radius: var(--radius);
 }
+/* 段階：挑戦中＝枠だけ（まだ途中）／成功事例＝緑で塗る／学び＝灰色 */
+.badge em.stage--challenge { color: var(--teal-ink); background: transparent; box-shadow: inset 0 0 0 1px var(--teal); }
+.badge em.stage--lesson { color: var(--ink-2); background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line-2); }
+.card--challenge { --kind: var(--teal); }
+.card--lesson { --kind: var(--ink-3); }
 .kind-dot { display: inline-block; width: 7px; height: 7px; transform: rotate(45deg); margin-right: 8px; vertical-align: 1px; }
 .kind-dot--problem { background: var(--teal); }
 .kind-dot--solution { background: var(--green); }
@@ -631,6 +636,13 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--g
 .panel__list .small { margin: 0; }
 .adopt-form { display: flex; flex-direction: column; gap: 8px; }
 .adopted { margin: 0 0 4px; font-size: 13px; color: var(--green-ink); }
+/* 挑戦の結果の報告（挑戦した本人だけに出る） */
+.report { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 14px; }
+.report .small { margin: 0; }
+.report__item { border: 1px solid var(--line-2); border-radius: var(--radius); }
+.report__item summary { cursor: pointer; padding: 10px 12px; font-size: 13.5px; font-weight: 600; }
+.report__item[open] summary { border-bottom: 1px dashed var(--line-2); }
+.report__item form { padding: 12px; }
 
 /* ── 投稿のフォーム ───────────────────────── */
 .form {
@@ -1001,6 +1013,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--g
 .hbars__track span { display: block; height: 100%; background: var(--green); border-radius: 0 4px 4px 0; }
 
 .table--plain { border: none; font-size: 13.5px; }
+.table-scroll { overflow-x: auto; min-width: 0; }
+.table-scroll .table { min-width: 520px; }
 .table--plain th { padding: 8px 10px; }
 .table--plain td { padding: 10px; }
 .table__link:hover { color: var(--green-ink); }
@@ -1046,6 +1060,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--g
   .hero__visual { max-width: 520px; }
   .detail__side { position: static; }
   .stats { grid-template-columns: repeat(2, 1fr); }
+  .steps { grid-template-columns: repeat(2, 1fr); }
   .stat:nth-child(3) { border-left: none; }
   .stat:nth-child(n + 3) { border-top: 1px solid var(--line); }
   .team-head { flex-direction: column; align-items: flex-start; }

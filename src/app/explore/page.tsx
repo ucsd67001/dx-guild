@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { listPosts, listTeams, type PostFilter } from "@/lib/data";
-import { CATEGORIES, TOOLS, type Kind } from "@/lib/constants";
+import { CATEGORIES, STAGES, TOOLS, type Kind, type Stage } from "@/lib/constants";
 import { PostCard } from "@/components/PostCard";
 
 export const metadata: Metadata = { title: "探す" };
@@ -12,11 +12,14 @@ export default async function Explore({ searchParams }: { searchParams: Promise<
   const sp = await searchParams;
   const one = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : "");
 
-  const kind = (["problem", "solution"].includes(one("kind")) ? one("kind") : undefined) as Kind | undefined;
+  const stage = (one("stage") in STAGES ? one("stage") : undefined) as Stage | undefined;
+  // 段階を選んだら、種類は解決策に決まる
+  const kind = (stage ? "solution" : ["problem", "solution"].includes(one("kind")) ? one("kind") : undefined) as Kind | undefined;
   const sort = (["new", "popular", "impact"].includes(one("sort")) ? one("sort") : "new") as PostFilter["sort"];
   const filter: PostFilter = {
     q: one("q") || undefined,
     kind,
+    stage,
     category: one("category") || undefined,
     tool: one("tool") || undefined,
     team: Number(one("team")) || undefined,
@@ -26,34 +29,46 @@ export default async function Explore({ searchParams }: { searchParams: Promise<
   const posts = listPosts(filter);
   const teams = listTeams();
 
-  // 種類のタブは、ほかの条件を残したまま切り替える
-  const withKind = (k?: string) => {
+  // 種類と段階のタブは、ほかの条件を残したまま切り替える
+  const withTab = (key?: "kind" | "stage", value?: string) => {
     const p = new URLSearchParams();
-    for (const [key, v] of Object.entries(sp)) if (typeof v === "string" && v && key !== "kind" && key !== "open") p.set(key, v);
-    if (k) p.set("kind", k);
+    for (const [k, v] of Object.entries(sp)) {
+      if (typeof v === "string" && v && !["kind", "stage", "open"].includes(k)) p.set(k, v);
+    }
+    if (key && value) p.set(key, value);
     const s = p.toString();
     return s ? `/explore?${s}` : "/explore";
   };
+  const tab = filter.open ? "open" : stage ?? kind ?? "all";
 
   return (
     <div className="wrap page">
       <p className="eyebrow">EXPLORE</p>
-      <h1 className="page__title">困りごとと解決策を探す</h1>
-      <p className="lead">よそのチームが、もう同じことに悩んでいたり、もう解いていたりするかもしれません。</p>
+      <h1 className="page__title">困りごと・挑戦・事例を探す</h1>
+      <p className="lead">
+        よそのチームが、もう同じことに悩んでいたり、いま挑戦していたり、もう解いていたりするかもしれません。
+        うまくいかなかった挑戦も「学び」として残っています。
+      </p>
 
       <div className="tabs" role="tablist">
-        <Link href={withKind()} className={!kind && !filter.open ? "is-active" : undefined}>すべて</Link>
-        <Link href={withKind("problem")} className={kind === "problem" && !filter.open ? "is-active" : undefined}>
+        <Link href={withTab()} className={tab === "all" ? "is-active" : undefined}>すべて</Link>
+        <Link href={withTab("kind", "problem")} className={tab === "problem" ? "is-active" : undefined}>
           <i className="kind-dot kind-dot--problem" />困りごと
         </Link>
-        <Link href={withKind("solution")} className={kind === "solution" ? "is-active" : undefined}>
-          <i className="kind-dot kind-dot--solution" />解決策
+        <Link href={withTab("stage", "challenge")} className={tab === "challenge" ? "is-active" : undefined}>
+          {STAGES.challenge}
         </Link>
-        <Link href="/explore?open=1&sort=popular" className={filter.open ? "is-active" : undefined}>解決策待ち</Link>
+        <Link href={withTab("stage", "success")} className={tab === "success" ? "is-active" : undefined}>
+          <i className="kind-dot kind-dot--solution" />{STAGES.success}
+        </Link>
+        <Link href={withTab("stage", "lesson")} className={tab === "lesson" ? "is-active" : undefined}>
+          {STAGES.lesson}
+        </Link>
+        <Link href="/explore?open=1&sort=popular" className={tab === "open" ? "is-active" : undefined}>挑戦者待ち</Link>
       </div>
 
       <form className="filters" action="/explore">
-        {kind && <input type="hidden" name="kind" value={kind} />}
+        {stage ? <input type="hidden" name="stage" value={stage} /> : kind && <input type="hidden" name="kind" value={kind} />}
         {filter.open && <input type="hidden" name="open" value="1" />}
         <label className="field field--grow">
           <span className="field__label mono">KEYWORD</span>
@@ -94,7 +109,7 @@ export default async function Explore({ searchParams }: { searchParams: Promise<
       <p className="result-count mono">
         {posts.length} RESULTS
         {(filter.q || filter.category || filter.tool || filter.team) && (
-          <Link href={withKind(kind)} className="clear">条件を外す</Link>
+          <Link href={stage ? withTab("stage", stage) : withTab("kind", kind)} className="clear">条件を外す</Link>
         )}
       </p>
 

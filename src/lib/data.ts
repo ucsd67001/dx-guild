@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { db } from "./db";
-import type { Kind, Stage } from "./constants";
+import type { Kind, ReactionType, Stage } from "./constants";
 
 // ── 型 ─────────────────────────────────────
 
@@ -26,10 +26,11 @@ export type Post = {
   teamCode: string;
   createdAt: string;
   metoo: number;      // うちも困っている
-  want: number;       // うちでも使いたい
+  want: number;       // うちでも使いたい（成功事例）・参考になった（学び）
+  join: number;       // 一緒にやりたい（挑戦中）
   adoptions: number;  // 横展開したチームの数
   comments: number;
-  solutions: number;  // この困りごとに答えている解決策の数
+  solutions: number;  // この困りごとに挑戦している・解決した解決策の数（学びは数えない）
 };
 
 type PostRow = Omit<Post, "tools" | "tags"> & { tools: string; tags: string };
@@ -40,9 +41,10 @@ const POST_SELECT = `
          p.team_id AS teamId, t.name AS teamName, t.code AS teamCode, p.created_at AS createdAt,
          (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id AND r.type = 'metoo') AS metoo,
          (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id AND r.type = 'want')  AS want,
+         (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id AND r.type = 'join')  AS "join",
          (SELECT COUNT(*) FROM adoptions a WHERE a.solution_id = p.id)                AS adoptions,
          (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id)                     AS comments,
-         (SELECT COUNT(*) FROM posts s WHERE s.problem_id = p.id)                     AS solutions
+         (SELECT COUNT(*) FROM posts s WHERE s.problem_id = p.id AND s.stage <> 'lesson') AS solutions
   FROM posts p
   JOIN users u ON u.id = p.author_id
   JOIN teams t ON t.id = p.team_id`;
@@ -84,14 +86,18 @@ export async function getCurrentUser(): Promise<User> {
 
 // ── 投稿 ───────────────────────────────────
 
+// 困りごとに、挑戦中か成功した解決策がまだ無い（学びだけなら、まだ挑戦者を待っている）
+const NO_ANSWER = "NOT EXISTS (SELECT 1 FROM posts s WHERE s.problem_id = p.id AND s.stage <> 'lesson')";
+
 export type PostFilter = {
   q?: string;
   kind?: Kind;
+  stage?: Stage;
   category?: string;
   tool?: string;
   team?: number;
   sort?: "new" | "popular" | "impact";
-  open?: boolean; // 解決策がまだ無い困りごとだけ
+  open?: boolean; // 挑戦も解決策もまだ無い困りごとだけ（学びだけのものは含む）
   limit?: number;
 };
 
@@ -99,10 +105,11 @@ export function listPosts(f: PostFilter = {}): Post[] {
   const where: string[] = [];
   const args: (string | number)[] = [];
   if (f.kind) { where.push("p.kind = ?"); args.push(f.kind); }
+  if (f.stage) { where.push("p.stage = ?"); args.push(f.stage); }
   if (f.category) { where.push("p.category = ?"); args.push(f.category); }
   if (f.team) { where.push("p.team_id = ?"); args.push(f.team); }
   if (f.tool) { where.push("EXISTS (SELECT 1 FROM json_each(p.tools) WHERE value = ?)"); args.push(f.tool); }
-  if (f.open) where.push("p.kind = 'problem' AND NOT EXISTS (SELECT 1 FROM posts s WHERE s.problem_id = p.id)");
+  if (f.open) where.push(`p.kind = 'problem' AND ${NO_ANSWER}`);
   if (f.q) {
     for (const word of f.q.split(/\s+/).filter(Boolean)) {
       where.push("(p.title LIKE ? OR p.summary LIKE ? OR p.body LIKE ? OR p.tags LIKE ? OR p.tools LIKE ?)");
@@ -112,7 +119,7 @@ export function listPosts(f: PostFilter = {}): Post[] {
   }
   const order = {
     new: "p.created_at DESC",
-    popular: "(metoo + want + adoptions * 2) DESC, p.created_at DESC",
+    popular: "(metoo + want + \"join\" + adoptions * 2) DESC, p.created_at DESC",
     impact: "COALESCE(p.hours, 0) * (1 + adoptions) DESC, p.created_at DESC",
   }[f.sort ?? "new"];
 
@@ -154,7 +161,7 @@ export function listRelated(post: Post, limit = 4): Post[] {
 
 export type ReactingTeam = { teamId: number; teamName: string; teamCode: string; people: number };
 
-export function listReactingTeams(postId: number, type: "metoo" | "want"): ReactingTeam[] {
+export function listReactingTeams(postId: number, type: ReactionType): ReactingTeam[] {
   return db.prepare(`
     SELECT t.id AS teamId, t.name AS teamName, t.code AS teamCode, COUNT(*) AS people
     FROM reactions r JOIN users u ON u.id = r.user_id JOIN teams t ON t.id = u.team_id
@@ -162,7 +169,7 @@ export function listReactingTeams(postId: number, type: "metoo" | "want"): React
     GROUP BY t.id ORDER BY people DESC, t.id`).all(postId, type) as ReactingTeam[];
 }
 
-export function hasReacted(postId: number, userId: number, type: "metoo" | "want") {
+export function hasReacted(postId: number, userId: number, type: ReactionType) {
   return !!db.prepare("SELECT 1 FROM reactions WHERE post_id = ? AND user_id = ? AND type = ?").get(postId, userId, type);
 }
 
@@ -192,24 +199,27 @@ export function listComments(postId: number): Comment[] {
 
 export type Stats = {
   problems: number;
-  solutions: number;
+  challenges: number;
+  successes: number;
+  lessons: number;
   openProblems: number;
   adoptions: number;
   teamsSharing: number;
-  hoursSaved: number; // 解決策の「減った時間／月」×（作ったチーム＋横展開したチーム）
+  hoursSaved: number; // 成功事例の「減った時間／月」×（作ったチーム＋横展開したチーム）
 };
 
 export function getStats(): Stats {
   return db.prepare(`
     SELECT
       (SELECT COUNT(*) FROM posts WHERE kind = 'problem')  AS problems,
-      (SELECT COUNT(*) FROM posts WHERE kind = 'solution') AS solutions,
-      (SELECT COUNT(*) FROM posts p WHERE kind = 'problem'
-         AND NOT EXISTS (SELECT 1 FROM posts s WHERE s.problem_id = p.id)) AS openProblems,
+      (SELECT COUNT(*) FROM posts WHERE stage = 'challenge') AS challenges,
+      (SELECT COUNT(*) FROM posts WHERE stage = 'success')   AS successes,
+      (SELECT COUNT(*) FROM posts WHERE stage = 'lesson')    AS lessons,
+      (SELECT COUNT(*) FROM posts p WHERE kind = 'problem' AND ${NO_ANSWER}) AS openProblems,
       (SELECT COUNT(*) FROM adoptions) AS adoptions,
       (SELECT COUNT(DISTINCT team_id) FROM posts) AS teamsSharing,
       (SELECT COALESCE(SUM(p.hours * (1 + (SELECT COUNT(*) FROM adoptions a WHERE a.solution_id = p.id))), 0)
-         FROM posts p WHERE p.kind = 'solution') AS hoursSaved`).get() as Stats;
+         FROM posts p WHERE p.stage = 'success') AS hoursSaved`).get() as Stats;
 }
 
 // 横展開の流れ：どのチームの解決策が、どのチームへ渡ったか

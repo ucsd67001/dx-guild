@@ -41,7 +41,7 @@ type SeedPost = {
   tools?: string[];
   tags: string[];
   hours?: number;
-  stage?: "idea" | "pilot" | "live";
+  stage?: "challenge" | "success" | "lesson";
   problem?: number;
   author: number;
   daysAgo: number;
@@ -56,7 +56,7 @@ const POSTS: SeedPost[] = [
     category: "問い合わせ対応", tags: ["パスワード", "本人確認", "定型対応"], hours: 40,
   },
   {
-    id: 2, kind: "solution", author: 1, daysAgo: 30, problem: 1, stage: "live",
+    id: 2, kind: "solution", author: 1, daysAgo: 30, problem: 1, stage: "success",
     title: "Copilot Studio で、パスワードの一次対応を Teams のボットにした",
     summary: "よくある質問への回答と、セルフリセットの画面への案内をボットに任せた。人が出るのは本人確認が要るときだけ。",
     body: "■ やったこと\n・Copilot Studio で「パスワード」「ロック」などの言葉に反応するトピックを12個作った\n・セルフリセットの画面へ案内し、できなかったときだけ Power Automate で担当者へ回す\n\n■ 結果\n人が受ける件数が月300件 → 約80件に。\n\n■ 横展開するときのポイント\n・トピックの文面はテンプレートとして共有できます（コメントでお声がけください）\n・最初の2週間は、ボットが答えられなかった質問を毎日見て足しました",
@@ -71,7 +71,7 @@ const POSTS: SeedPost[] = [
     category: "ドキュメント作成", tags: ["手順書", "キッティング", "入社対応"], hours: 12,
   },
   {
-    id: 4, kind: "solution", author: 5, daysAgo: 22, stage: "pilot",
+    id: 4, kind: "solution", author: 5, daysAgo: 22, stage: "challenge",
     title: "構成変更の記録から、手順書の更新案を AI に下書きさせる",
     summary: "変更管理のチケットと手順書を突き合わせ、直すべき箇所と書き換え案を Azure OpenAI に出させている。",
     body: "■ やったこと\n・変更管理のチケット（週に20件ほど）を Python で取り出す\n・手順書をページごとに分けて Azure OpenAI に渡し、「このチケットの影響を受ける箇所」と「書き換え案」を出させる\n・人は案を読んで、採るものだけ反映する\n\n■ 結果\n手順書の見直しにかかる時間が、月10時間 → 3時間ほどに。\n\n■ 横展開するときのポイント\nサーバーの手順書で試しています。PC やネットワークの手順書でも、チケットがあれば同じ形で使えるはずです",
@@ -86,7 +86,7 @@ const POSTS: SeedPost[] = [
     category: "監視・運用", tags: ["ログ", "監視", "朝の定型作業"], hours: 20,
   },
   {
-    id: 6, kind: "solution", author: 12, daysAgo: 20, problem: 5, stage: "live",
+    id: 6, kind: "solution", author: 12, daysAgo: 20, problem: 5, stage: "success",
     title: "ログの異常だけを、Teams のチャネルに通知する",
     summary: "ログを Python で毎朝6時に読み、いつもと違う行だけを Teams に流す。人は通知を見るだけになった。",
     body: "■ やったこと\n・ふだん出る行を「いつもの形」として覚えさせ、それと違う行だけを拾う\n・拾った行を Power Automate 経由で Teams のチャネルに投稿\n\n■ 結果\n朝の確認が40分 → 5分。見落としはこの3か月で0件。\n\n■ 横展開するときのポイント\n・最初の1週間は「いつもの形」の学習期間として、通知が多めに出ます\n・ログの置き場所さえ決まっていれば、どのチームでも動きます",
@@ -108,7 +108,7 @@ const POSTS: SeedPost[] = [
     category: "データ集計・レポート", tags: ["月次報告", "集計", "Excel"], hours: 16,
   },
   {
-    id: 9, kind: "solution", author: 14, daysAgo: 18, problem: 8, stage: "live",
+    id: 9, kind: "solution", author: 14, daysAgo: 18, problem: 8, stage: "success",
     title: "SharePoint リスト ＋ Power Automate で、月次報告を自動で集計する",
     summary: "報告を SharePoint リストへの入力に変え、締め日に Power Automate が部門の様式へ流し込む。",
     body: "■ やったこと\n・報告の項目を12個にそろえ、SharePoint リストにした\n・締め日の朝に Power Automate がリストを読み、Excel の様式に書き出してメールで送る\n\n■ 結果\n集計にかかる時間が、月16時間 → 4時間に。\n\n■ 横展開するときのポイント\nリストとフローはパッケージにして渡せます。項目の名前だけ、チームに合わせて替えてください",
@@ -123,7 +123,7 @@ const POSTS: SeedPost[] = [
     category: "資産管理", tags: ["保守期限", "台帳", "リマインド"], hours: 6,
   },
   {
-    id: 11, kind: "solution", author: 4, daysAgo: 15, stage: "live",
+    id: 11, kind: "solution", author: 4, daysAgo: 15, stage: "success",
     title: "Power Apps の資産台帳に、期限の30日前のリマインドを付けた",
     summary: "PC とスマホの台帳を Power Apps にして、リース期限の30日前に担当と上長へ Teams で知らせる。",
     body: "■ やったこと\n・Excel の台帳を SharePoint リストに移し、Power Apps で入力と検索の画面を作った\n・毎朝、期限まで30日の機器を拾って Teams で通知\n\n■ 結果\nリースの返却漏れが0件に。台帳を探す時間も減った。\n\n■ 横展開するときのポイント\nPC 用に作りましたが、項目を替えればネットワーク機器やライセンスの期限にも使えるはずです",
@@ -138,7 +138,7 @@ const POSTS: SeedPost[] = [
     category: "会議・議事録", tags: ["議事録", "Teams", "要約"], hours: 10,
   },
   {
-    id: 13, kind: "solution", author: 11, daysAgo: 16, problem: 12, stage: "live",
+    id: 13, kind: "solution", author: 11, daysAgo: 16, problem: 12, stage: "success",
     title: "Teams の文字起こしから、議事録を Microsoft 365 Copilot で下書きする（プロンプト集つき）",
     summary: "決定事項・宿題・持ち越しの3つに分けて書かせるプロンプトを、チームでそろえた。",
     body: "■ やったこと\n・会議の文字起こしをオンにするのを、会議の約束ごとにした\n・「決定事項／宿題（担当・期限）／持ち越し」の形で書かせるプロンプトを5種類つくった\n\n■ 結果\n議事録が1本あたり60分 → 15分。形がそろい、探しやすくなった。\n\n■ 横展開するときのポイント\nプロンプト集はこの投稿のコメントに置いてあります。そのまま使えます",
@@ -153,7 +153,7 @@ const POSTS: SeedPost[] = [
     category: "申請・承認", tags: ["申請", "承認フロー", "見える化"], hours: 14,
   },
   {
-    id: 15, kind: "solution", author: 8, daysAgo: 12, stage: "pilot",
+    id: 15, kind: "solution", author: 8, daysAgo: 12, stage: "challenge",
     title: "セキュリティ例外の申請を、Forms ＋ Power Automate の承認フローにした",
     summary: "申請を Forms で受け、承認の順番を Power Automate で回す。どこで止まっているかは一覧の画面で見える。",
     body: "■ やったこと\n・Forms で申請を受け、Power Automate の承認機能で上長 → セキュリティの順に回す\n・SharePoint リストに状況を書き戻し、申請者も一覧で見られるようにした\n\n■ 結果\n「いまどこですか」の問い合わせがほぼ無くなった。\n\n■ 横展開するときのポイント\n承認の順番と項目を替えれば、ほかの申請にも使えます。フローの中身はお見せできます",
@@ -168,7 +168,7 @@ const POSTS: SeedPost[] = [
     category: "問い合わせ対応", tags: ["チケット", "分類", "AI"], hours: 18,
   },
   {
-    id: 17, kind: "solution", author: 13, daysAgo: 6, problem: 16, stage: "pilot",
+    id: 17, kind: "solution", author: 13, daysAgo: 6, problem: 16, stage: "challenge",
     title: "Dify で、問い合わせチケットのカテゴリと担当を自動で提案する",
     summary: "チケットの本文を Dify のワークフローに渡し、カテゴリ・担当チーム・理由を出させる。人は確認して確定する。",
     body: "■ やったこと\n・過去のチケット500件から、カテゴリごとの例を20件ずつ選んで Dify の知識に入れた\n・ServiceNow の新しいチケットを1時間ごとに取り出し、提案を書き戻す\n\n■ 結果（試行中）\n提案の8割はそのまま確定できている。\n\n■ 横展開するときのポイント\nカテゴリの一覧と例さえあれば、ほかの窓口でも動きます",
@@ -181,6 +181,14 @@ const POSTS: SeedPost[] = [
     summary: "部署ごとに何本使っているかを、管理画面から書き出して数えている。",
     body: "■ いまのやり方\n管理画面から CSV を書き出し、Excel のピボットで部署ごとに数える。\n\n■ 困っていること\n・毎月2時間ほど\n・使っていないライセンスの洗い出しまで手が回らない",
     category: "アカウント・権限管理", tags: ["ライセンス", "集計", "Microsoft 365"], hours: 8,
+  },
+  {
+    id: 19, kind: "solution", author: 12, daysAgo: 9, problem: 7, stage: "lesson",
+    title: "RPA で5つのシステムの画面からアカウント一覧を取り出そうとしたが、画面が変わるたびに止まった",
+    summary: "UiPath で画面を操作して一覧を書き出す形にしたが、システムの更新のたびに直しが要り、続けられなかった。",
+    body: "■ やったこと\n・UiPath で、5つのシステムの管理画面からアカウント一覧を書き出すロボットを作った\n\n■ 結果\n最初の月は動いたが、2つのシステムの画面が更新されて止まった。直すのに毎回半日かかった。\n\n■ 学んだこと（次に試す人へ）\n・画面の操作ではなく、各システムの CSV 出力や API で取り出すほうが長持ちする\n・人事の退職者データは、データ基盤に毎日届いているものを使える",
+    category: "アカウント・権限管理", tools: ["UiPath"],
+    tags: ["棚卸し", "RPA", "退職者"],
   },
 ];
 
@@ -198,14 +206,19 @@ const METOO: [number, number][] = [
   [18, 8], [18, 14],
 ];
 
-// [投稿, 人] うちでも使いたい
+// [投稿, 人] うちでも使いたい（成功事例）・参考になった（学び）
 const WANT: [number, number][] = [
   [2, 3], [2, 11],
-  [4, 3], [4, 7],
   [6, 6], [6, 7],
   [9, 1], [9, 6], [9, 8], [9, 11],
   [11, 7], [11, 14],
   [13, 1], [13, 9], [13, 14], [13, 13], [13, 4],
+  [19, 9], [19, 13],
+];
+
+// [投稿, 人] 一緒にやりたい（挑戦中）
+const JOIN: [number, number][] = [
+  [4, 3], [4, 7],
   [15, 2], [15, 1],
   [17, 2], [17, 1],
 ];
@@ -336,6 +349,7 @@ export function seed(db: Database.Database) {
     const reaction = db.prepare("INSERT INTO reactions (post_id, user_id, type) VALUES (?, ?, ?)");
     for (const [p, u] of METOO) reaction.run(p, u, "metoo");
     for (const [p, u] of WANT) reaction.run(p, u, "want");
+    for (const [p, u] of JOIN) reaction.run(p, u, "join");
 
     const adoption = db.prepare(`
       INSERT INTO adoptions (solution_id, team_id, user_id, note, created_at)

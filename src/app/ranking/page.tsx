@@ -18,7 +18,7 @@ export default async function Ranking() {
     <div className="wrap page">
       <p className="eyebrow">ADVENTURERS&apos; GUILD</p>
       <h1 className="page__title">冒険者ランキング</h1>
-      <p className="lead">困りごとを出す・解決策を共有する・よそのチームに横展開される。IT Div. を良くした行いが、経験値（XP）になります。</p>
+      <p className="lead">困りごとを出す・挑戦を共有する・成功を横展開される。うまくいかなかった挑戦も、学びとして残せば経験値になります。IT Div. を良くした行いが、経験値（XP）になります。</p>
 
       {/* あなたのステータス */}
       <section className="status-card">

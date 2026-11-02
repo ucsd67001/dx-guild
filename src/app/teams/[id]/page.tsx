@@ -45,15 +45,15 @@ export default async function TeamPage({ params }: Props) {
         </div>
         <div className="team-head__stats">
           <Mini label="PROBLEMS" value={team.problems} />
-          <Mini label="SOLUTIONS" value={team.solutions} />
+          <Mini label="CHALLENGES" value={team.solutions} />
           <Mini label="GIVEN" value={team.given} accent />
           <Mini label="TAKEN" value={team.taken} />
         </div>
       </div>
 
-      <TeamSection en="SOLUTIONS" title="このチームの解決策" posts={solutions} empty="まだ解決策の投稿はありません。" />
+      <TeamSection en="CHALLENGES & SUCCESSES" title="このチームの挑戦と成功事例" posts={solutions} empty="まだ挑戦の投稿はありません。" />
       <TeamSection en="PROBLEMS" title="このチームの困りごと" posts={problems} empty="まだ困りごとの投稿はありません。" />
-      <TeamSection en="ADOPTED FROM OTHERS" title="よそのチームから取り入れた解決策" posts={adopted} empty="まだ取り入れた解決策はありません。" />
+      <TeamSection en="ADOPTED FROM OTHERS" title="よそのチームから取り入れた成功事例" posts={adopted} empty="まだ取り入れた成功事例はありません。" />
     </div>
   );
 }

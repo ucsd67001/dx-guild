@@ -30,11 +30,17 @@ export const TOOLS = [
 ] as const;
 
 // 解決策の段階
+// 解決策の段階：困りごと → 挑戦中 → 成功事例（うまくいかなかったら、学びとして残す）。
+// 横展開・減った時間・クエストの報酬は、成功事例だけに数える
 export const STAGES = {
-  idea: "構想",
-  pilot: "試行中",
-  live: "運用中",
+  challenge: "挑戦中",
+  success: "成功事例",
+  lesson: "学び",
 } as const;
+
+// 段階ごとのリアクション：一緒にやりたい／うちでも使いたい／参考になった
+export const REACTION_OF = { challenge: "join", success: "want", lesson: "want" } as const;
+export type ReactionType = "metoo" | "want" | "join";
 
 export type Kind = "problem" | "solution";
 export type Stage = keyof typeof STAGES;

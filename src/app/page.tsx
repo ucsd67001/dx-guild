@@ -8,7 +8,8 @@ export default async function Home() {
   const me = await getCurrentUser();
   const stats = getStats();
   const waiting = listPosts({ open: true, sort: "popular", limit: 3 });
-  const spreading = listPosts({ kind: "solution", sort: "popular", limit: 3 });
+  const challenging = listPosts({ stage: "challenge", sort: "popular", limit: 3 });
+  const spreading = listPosts({ stage: "success", sort: "popular", limit: 3 });
   const latest = listPosts({ sort: "new", limit: 6 });
 
   return (
@@ -54,8 +55,8 @@ export default async function Home() {
       </section>
 
       <section className="wrap stats">
-        <Stat label="PROBLEMS" title="困りごと" value={stats.problems} note={`うち解決策待ち ${stats.openProblems}件`} />
-        <Stat label="SOLUTIONS" title="解決策" value={stats.solutions} note={`${stats.teamsSharing}チームが投稿`} />
+        <Stat label="PROBLEMS" title="困りごと" value={stats.problems} note={`うち挑戦者待ち ${stats.openProblems}件`} />
+        <Stat label="SUCCESSES" title="成功事例" value={stats.successes} note={`いま挑戦中 ${stats.challenges}件・学び ${stats.lessons}件`} />
         <Stat label="ADOPTIONS" title="横展開" value={stats.adoptions} note="ほかのチームが取り入れた数" accent />
         <Stat label="HOURS SAVED / MONTH" title="減った時間（月）" value={Math.round(stats.hoursSaved)} unit="h" note="投稿者の申告 × 使っているチーム数" />
       </section>
@@ -64,7 +65,8 @@ export default async function Home() {
         {[
           ["01", "事例を探す", "よそのチームが、もう同じことを解いているかもしれない。"],
           ["02", "賢者と企画する", "悩みのひとことから、あるべき姿・課題・解決策・効果の試算まで。"],
-          ["03", "共有して広げる", "クエストとして出し、取り入れたら「横展開した」。行いが XP になる。"],
+          ["03", "挑戦を共有する", "やり始めた時点で共有し、仲間を募る。うまくいかなくても「学び」として残る。"],
+          ["04", "成功を広げる", "成功したら成功事例に。よそのチームが取り入れたら「横展開」。行いが XP になる。"],
         ].map(([n, t, d]) => (
           <div key={n} className="step">
             <span className="step__n mono">{n}</span>
@@ -74,7 +76,7 @@ export default async function Home() {
         ))}
       </section>
 
-      <Section en="OPEN QUESTS" title="解決策を待っているクエスト（報酬つき）" more="/explore?open=1&sort=popular">
+      <Section en="OPEN QUESTS" title="挑戦者を待っているクエスト（報酬つき）" more="/explore?open=1&sort=popular">
         <div className="grid grid--3">
           {waiting.map((p) => (
             <PostCard key={p.id} post={p} />
@@ -82,7 +84,15 @@ export default async function Home() {
         </div>
       </Section>
 
-      <Section en="SPREADING NOW" title="いま横に広がっている解決策" more="/explore?kind=solution&sort=popular">
+      <Section en="CHALLENGING NOW" title="いま挑戦中（一緒にやる仲間を募集中）" more="/explore?stage=challenge&sort=popular">
+        <div className="grid grid--3">
+          {challenging.map((p) => (
+            <PostCard key={p.id} post={p} />
+          ))}
+        </div>
+      </Section>
+
+      <Section en="SPREADING NOW" title="いま横に広がっている成功事例" more="/explore?stage=success&sort=popular">
         <div className="grid grid--3">
           {spreading.map((p) => (
             <PostCard key={p.id} post={p} />

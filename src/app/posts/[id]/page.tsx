@@ -11,8 +11,8 @@ import {
   listRelated,
   listSolutionsFor,
 } from "@/lib/data";
-import { addComment, adoptSolution, toggleReaction, withdrawAdoption } from "@/lib/actions";
-import { HOURLY_COST, STAGES, fmtDate, man, postCode } from "@/lib/constants";
+import { addComment, adoptSolution, reportResult, toggleReaction, withdrawAdoption } from "@/lib/actions";
+import { HOURLY_COST, REACTION_OF, STAGES, fmtDate, man, postCode } from "@/lib/constants";
 import { bountyOf } from "@/lib/game";
 import { KindBadge, PostCard } from "@/components/PostCard";
 
@@ -29,13 +29,26 @@ export default async function PostPage({ params }: Props) {
 
   const me = await getCurrentUser();
   const isProblem = post.kind === "problem";
-  const reactionType = isProblem ? "metoo" : "want";
+  const stage = post.stage ?? "challenge";
+  const isChallenge = !isProblem && stage === "challenge";
+  const isSuccess = !isProblem && stage === "success";
+  const isLesson = !isProblem && stage === "lesson";
+  const isMine = post.authorId === me.id;
+  // 困りごと＝うちも困っている／挑戦中＝一緒にやりたい／成功事例＝うちでも使いたい／学び＝参考になった
+  const reactionType = isProblem ? "metoo" : REACTION_OF[stage];
+  const reaction = isProblem
+    ? { label: "うちも困っている", count: post.metoo, list: "ALSO STRUGGLING" }
+    : isChallenge
+      ? { label: "一緒にやりたい", count: post.join, list: "WANTS TO JOIN" }
+      : isLesson
+        ? { label: "参考になった", count: post.want, list: "FOUND IT HELPFUL" }
+        : { label: "うちでも使いたい", count: post.want, list: "WANTS TO USE" };
   const reacted = hasReacted(post.id, me.id, reactionType);
   const reactingTeams = listReactingTeams(post.id, reactionType);
   const comments = listComments(post.id);
   const related = listRelated(post);
   const solutions = isProblem ? listSolutionsFor(post.id) : [];
-  const adoptions = isProblem ? [] : listAdoptions(post.id);
+  const adoptions = isSuccess ? listAdoptions(post.id) : [];
   const problem = post.problemId ? getPost(post.problemId) : undefined;
   const myTeamAdopted = adoptions.some((a) => a.teamId === me.teamId);
   const ownTeam = post.teamId === me.teamId;
@@ -45,7 +58,9 @@ export default async function PostPage({ params }: Props) {
       <nav className="crumbs mono">
         <Link href="/explore">EXPLORE</Link>
         <span>/</span>
-        <Link href={`/explore?kind=${post.kind}`}>{isProblem ? "PROBLEMS" : "SOLUTIONS"}</Link>
+        <Link href={isProblem ? "/explore?kind=problem" : `/explore?stage=${stage}`}>
+          {isProblem ? "PROBLEMS" : isChallenge ? "CHALLENGES" : isLesson ? "LESSONS" : "SUCCESSES"}
+        </Link>
         <span>/</span>
         <span>{postCode(post.kind, post.id)}</span>
       </nav>
@@ -75,7 +90,13 @@ export default async function PostPage({ params }: Props) {
               <b>{post.authorName}</b>
               <Link href={`/teams/${post.teamId}`} className="dim"> ／ {post.teamName}（{post.teamCode}）</Link>
               <p className="dim small">
-                {isProblem ? "同じことで困っていたら、下のボタンで知らせてください。" : "詳しく知りたいことは、コメントで作った人に聞けます。"}
+                {isProblem
+                  ? "同じことで困っていたら、下のボタンで知らせてください。"
+                  : isChallenge
+                    ? "いま挑戦している最中です。一緒にやりたい人は、ボタンで知らせてください。"
+                    : isLesson
+                      ? "うまくいかなかった挑戦の記録です。次に試す人のための学びが書いてあります。"
+                      : "詳しく知りたいことは、コメントで作った人に聞けます。"}
               </p>
             </div>
           </div>
@@ -92,9 +113,9 @@ export default async function PostPage({ params }: Props) {
           {isProblem && (
             <section className="block">
               <div className="block__head">
-                <h2>この困りごとへの解決策 <span className="mono dim">{solutions.length}</span></h2>
+                <h2>この困りごとへの挑戦と事例 <span className="mono dim">{solutions.length}</span></h2>
                 <Link href={`/new?kind=solution&problem=${post.id}`} className="btn btn--ghost btn--sm">
-                  ＋ 解決策を投稿する
+                  ＋ 挑戦を始める
                 </Link>
               </div>
               {solutions.length ? (
@@ -103,7 +124,7 @@ export default async function PostPage({ params }: Props) {
                 </div>
               ) : (
                 <div className="empty empty--inline">
-                  <p>まだ解決策はありません。下の「似ている投稿」に、よそのチームのヒントがあるかもしれません。</p>
+                  <p>まだ挑戦はありません。下の「似ている投稿」に、よそのチームのヒントがあるかもしれません。</p>
                 </div>
               )}
             </section>
@@ -136,18 +157,20 @@ export default async function PostPage({ params }: Props) {
 
         <aside className="detail__side">
           <div className="panel">
-            <span className="panel__label mono">{isProblem ? "IMPACT" : "RESULT"}</span>
+            <span className="panel__label mono">{isProblem ? "IMPACT" : isChallenge ? "CHALLENGE" : isLesson ? "LESSON" : "RESULT"}</span>
             <div className="panel__figures">
-              {post.hours != null && (
-                <Figure value={isProblem ? `${post.hours}` : `−${post.hours}`} unit="h／月" label={isProblem ? "手作業にかかる時間" : "減った時間"} />
+              {post.hours != null && !isLesson && (
+                <Figure
+                  value={isProblem ? `${post.hours}` : `−${post.hours}`}
+                  unit="h／月"
+                  label={isProblem ? "手作業にかかる時間" : isChallenge ? "減る見込みの時間" : "減った時間"}
+                />
               )}
-              {isProblem ? (
-                <Figure value={post.metoo} unit="人" label="同じく困っている" />
-              ) : (
-                <Figure value={adoptions.length} unit="チーム" label="横展開した" accent />
-              )}
-              {!isProblem && post.stage && <Figure value={STAGES[post.stage]} label="段階" />}
-              {!isProblem && post.hours != null && (
+              {isProblem && <Figure value={post.metoo} unit="人" label="同じく困っている" />}
+              {isChallenge && <Figure value={post.join} unit="人" label="一緒にやりたい" accent />}
+              {isSuccess && <Figure value={adoptions.length} unit="チーム" label="横展開した" accent />}
+              {!isProblem && <Figure value={STAGES[stage]} label="段階" />}
+              {isSuccess && post.hours != null && (
                 <Figure value={man(post.hours * 12 * HOURLY_COST * (1 + adoptions.length))} unit="万円" label="年あたり（使っている全チーム）" accent />
               )}
               {isProblem && post.solutions === 0 && <Figure value={`+${bountyOf(post.metoo)}`} unit="XP" label="解決した人への報酬" accent />}
@@ -156,17 +179,53 @@ export default async function PostPage({ params }: Props) {
               <Link href={`/forge`} className="small forge-link">✦ 自分で解決策を考えてみる（賢者の工房）</Link>
             )}
 
-            <form action={toggleReaction}>
-              <input type="hidden" name="postId" value={post.id} />
-              <button className={`btn btn--block ${reacted ? "btn--on" : "btn--ghost"}`}>
-                {isProblem
-                  ? reacted ? "✓ うちも困っている" : "うちも困っている"
-                  : reacted ? "✓ うちでも使いたい" : "うちでも使いたい"}
-                <span className="mono">{isProblem ? post.metoo : post.want}</span>
-              </button>
-            </form>
+            {/* 自分の挑戦に「一緒にやりたい」は押せない */}
+            {!(isChallenge && isMine) && (
+              <form action={toggleReaction}>
+                <input type="hidden" name="postId" value={post.id} />
+                <button className={`btn btn--block ${reacted ? "btn--on" : "btn--ghost"}`}>
+                  {reacted ? `✓ ${reaction.label}` : reaction.label}
+                  <span className="mono">{reaction.count}</span>
+                </button>
+              </form>
+            )}
 
-            {!isProblem && !ownTeam && (
+            {isChallenge && isMine && (
+              <div className="report">
+                <span className="panel__label mono">REPORT</span>
+                <p className="small dim">挑戦の結果を報告すると、成功事例か学びになります。</p>
+                <details className="report__item">
+                  <summary>うまくいった → 成功事例にする</summary>
+                  <form action={reportResult} className="adopt-form">
+                    <input type="hidden" name="postId" value={post.id} />
+                    <input type="hidden" name="outcome" value="success" />
+                    <label className="field">
+                      <span className="field__label">実際に減った時間（h／月）</span>
+                      <input name="hours" type="number" min="0.1" step="0.1" max="9999" defaultValue={post.hours ?? undefined} />
+                    </label>
+                    <textarea name="note" maxLength={2000} rows={3} placeholder="やってみてどうだったか（任意）" />
+                    <button className="btn btn--primary btn--block">成功事例にする</button>
+                  </form>
+                </details>
+                <details className="report__item">
+                  <summary>うまくいかなかった → 学びとして残す</summary>
+                  <form action={reportResult} className="adopt-form">
+                    <input type="hidden" name="postId" value={post.id} />
+                    <input type="hidden" name="outcome" value="lesson" />
+                    <textarea
+                      name="note"
+                      required
+                      maxLength={2000}
+                      rows={4}
+                      placeholder="何がうまくいかなかったか、次に試す人へのひとこと（必須）"
+                    />
+                    <button className="btn btn--ghost btn--block">学びとして残す</button>
+                  </form>
+                </details>
+              </div>
+            )}
+
+            {isSuccess && !ownTeam && (
               myTeamAdopted ? (
                 <form action={withdrawAdoption}>
                   <input type="hidden" name="postId" value={post.id} />
@@ -181,11 +240,12 @@ export default async function PostPage({ params }: Props) {
                 </form>
               )
             )}
-            {!isProblem && ownTeam && <p className="small dim">あなたのチームの解決策です。ほかのチームが取り入れると、ここに数が増えます。</p>}
+            {isSuccess && ownTeam && <p className="small dim">あなたのチームの成功事例です。ほかのチームが取り入れると、ここに数が増えます。</p>}
+            {isChallenge && !isMine && <p className="small dim">挑戦が成功すると成功事例になり、横展開できるようになります。</p>}
 
             {reactingTeams.length > 0 && (
               <div className="panel__list">
-                <span className="panel__label mono">{isProblem ? "ALSO STRUGGLING" : "WANTS TO USE"}</span>
+                <span className="panel__label mono">{reaction.list}</span>
                 <ul>
                   {reactingTeams.map((t) => (
                     <li key={t.teamId}>

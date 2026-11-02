@@ -32,19 +32,20 @@ CREATE TABLE IF NOT EXISTS posts (
   category   TEXT NOT NULL,
   tools      TEXT NOT NULL DEFAULT '[]',   -- JSON の配列
   tags       TEXT NOT NULL DEFAULT '[]',   -- JSON の配列
-  hours      REAL,                         -- 困りごと＝手作業にかかる時間／月、解決策＝減った時間／月
-  stage      TEXT CHECK (stage IN ('idea', 'pilot', 'live')),  -- 解決策だけ
+  hours      REAL,                         -- 困りごと＝手作業にかかる時間／月、解決策＝減った時間／月（挑戦中は見込み）
+  stage      TEXT CHECK (stage IN ('challenge', 'success', 'lesson')),  -- 解決策だけ。挑戦中 → 成功事例／学び
   problem_id INTEGER REFERENCES posts(id) ON DELETE SET NULL,  -- 解決策が答えている困りごと
   author_id  INTEGER NOT NULL REFERENCES users(id),
   team_id    INTEGER NOT NULL REFERENCES teams(id),
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- metoo＝うちも困っている（困りごと）、want＝うちでも使いたい（解決策）
+-- metoo＝うちも困っている（困りごと）、join＝一緒にやりたい（挑戦中）、
+-- want＝うちでも使いたい（成功事例）・参考になった（学び）
 CREATE TABLE IF NOT EXISTS reactions (
   post_id    INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
   user_id    INTEGER NOT NULL REFERENCES users(id),
-  type       TEXT NOT NULL CHECK (type IN ('metoo', 'want')),
+  type       TEXT NOT NULL CHECK (type IN ('metoo', 'want', 'join')),
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (post_id, user_id, type)
 );

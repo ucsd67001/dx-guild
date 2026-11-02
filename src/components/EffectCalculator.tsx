@@ -65,7 +65,7 @@ export function EffectCalculator({ hourlyCost }: { hourlyCost: number }) {
     <div className="calc" ref={ref}>
       <div className="calc__head">
         <span className="field__label">
-          効果の試算 <span className="dim small">（{kind === "problem" ? "手作業にかかっている時間" : "解決策で減った時間"}）</span>
+          効果の試算 <span className="dim small">（{kind === "problem" ? "手作業にかかっている時間" : "減った時間。挑戦中なら見込み"}）</span>
         </span>
         <button type="button" className="btn btn--ghost btn--sm" onClick={askAI} disabled={busy}>
           {busy ? "見積もり中…" : "✦ AI に見積もってもらう"}
