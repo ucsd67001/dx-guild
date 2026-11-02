@@ -5,7 +5,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "./db";
 import { getCurrentUser, getPost, USER_COOKIE } from "./data";
-import { CATEGORIES, STAGES, TOOLS } from "./constants";
+import { CATEGORIES, STAGES, TOOLS, calcEffect } from "./constants";
+import { getForgeSession } from "./forge";
+import { toEffort } from "./ai";
 
 // ⚠️ どの関数も、画面を通さず直接呼べる。値はすべてここで確かめ直す
 
@@ -115,4 +117,67 @@ export async function addComment(form: FormData) {
   if (!postId || !body || !getPost(postId)) return;
   db.prepare("INSERT INTO comments (post_id, user_id, body) VALUES (?, ?, ?)").run(postId, me.id, body);
   revalidatePath(`/posts/${postId}`);
+}
+
+// ── 賢者の工房 ─────────────────────────────
+
+// 悩みのひとことから、壁打ちを始める
+export async function startForge(form: FormData) {
+  const me = await getCurrentUser();
+  const worry = text(form, "worry", 400);
+  if (!worry) return;
+  const r = db.prepare("INSERT INTO forge_sessions (user_id, team_id, worry) VALUES (?, ?, ?)").run(me.id, me.teamId, worry);
+  redirect(`/forge/${r.lastInsertRowid}`);
+}
+
+// 企画書を、困りごと（クエスト）と解決策（構想）の二つの投稿にして共有する
+export async function shareForge(form: FormData) {
+  const me = await getCurrentUser();
+  const sid = id(form, "sessionId");
+  const s = sid ? getForgeSession(sid) : undefined;
+  if (!s || !s.plan || s.userId !== me.id || s.solutionPostId) return;
+
+  const plan = s.plan;
+  const pick = plan.solutions[plan.recommended_index] ?? plan.solutions[0];
+  const effect = calcEffect(toEffort(pick.estimate));
+  const category = (CATEGORIES as readonly string[]).includes(plan.category) ? plan.category : "その他";
+  const tags = JSON.stringify(plan.tags.slice(0, 8));
+  const insert = db.prepare(`
+    INSERT INTO posts (kind, title, summary, body, category, tools, tags, hours, stage, problem_id, author_id, team_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+
+  const problemBody = [
+    `■ あるべき姿\n${plan.to_be}`,
+    `■ 現状\n${plan.as_is}`,
+    `■ 問題\n${plan.problem}`,
+    `■ 課題\n${plan.issues.map((i) => `・${i}`).join("\n")}`,
+    "（賢者の工房で整理しました）",
+  ].join("\n\n");
+
+  const solutionBody = [
+    `■ やること\n${pick.approach}`,
+    `■ ステップ\n${pick.steps.map((st, i) => `${i + 1}. ${st.title}（${st.duration}）：${st.detail}`).join("\n")}`,
+    `■ 効果の見込み\n月 ${effect.currentHours} 時間 → ${effect.savedHours} 時間の削減（${pick.estimate.assumptions}）`,
+    `■ 効果 → 成果 → インパクト\n効果：${pick.impact_path.output}\n成果：${pick.impact_path.outcome}\nインパクト：${pick.impact_path.impact}`,
+    `■ 気をつけること\n${pick.risks.map((r) => `・${r}`).join("\n")}`,
+    `■ 最初の一歩\n${plan.first_step}`,
+    "（賢者の工房でまとめた構想です。一緒に試してくれるチームを募集しています）",
+  ].join("\n\n");
+
+  const ids = db.transaction(() => {
+    const p = insert.run(
+      "problem", s.worry.slice(0, 100), plan.problem.slice(0, 240), problemBody, category, "[]", tags,
+      effect.currentHours || null, null, null, me.id, me.teamId,
+    ).lastInsertRowid as number;
+    const sol = insert.run(
+      "solution", `${pick.name}：${plan.title}`.slice(0, 100), pick.summary.slice(0, 240), solutionBody, category,
+      JSON.stringify(pick.tools.slice(0, 12)), tags, effect.savedHours || null, "idea", p, me.id, me.teamId,
+    ).lastInsertRowid as number;
+    db.prepare("UPDATE forge_sessions SET problem_post_id = ?, solution_post_id = ?, updated_at = datetime('now') WHERE id = ?")
+      .run(p, sol, s.id);
+    return { sol };
+  })();
+
+  revalidatePath("/", "layout");
+  redirect(`/posts/${ids.sol}`);
 }

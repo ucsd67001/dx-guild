@@ -17,23 +17,23 @@ export default async function Home() {
           <div className="hero__copy">
             <p className="eyebrow">
               <span className="eyebrow__dot" />
-              IT DIV. / KNOWLEDGE EXCHANGE PLATFORM
+              QUESTFORGE / IT DIV. IDEA &amp; SOLUTION GUILD
             </p>
             <h1 className="hero__title">
-              チームの工夫を、
+              悩みを、<span className="hero__accent">クエスト</span>に。
               <br />
-              <span className="hero__accent">横へ</span>広げる<span className="hero__dot">.</span>
+              閃きを、成果に<span className="hero__dot">.</span>
             </h1>
             <p className="lead">
-              手作業の困りごとと、ノーコード・ローコード・AI エージェントでの解決策を、チームの外へ。
-              同じことに悩むチームと、もう解いたチームをつなぎます。
+              「なんかめんどう」から始めていい。社内の成功事例を探し、賢者（AI）と壁打ちして解決策を企画し、
+              共有して横へ広げる。IT Div. の閃きと成果を、量産するギルドです。
             </p>
             <div className="hero__actions">
-              <Link href="/new?kind=problem" className="btn btn--primary">
-                困りごとを出す <span aria-hidden>→</span>
+              <Link href="/forge" className="btn btn--primary">
+                賢者に相談する <span aria-hidden>→</span>
               </Link>
-              <Link href="/new?kind=solution" className="btn btn--ghost">
-                解決策を共有する
+              <Link href="/explore" className="btn btn--ghost">
+                成功事例を探す
               </Link>
             </div>
             <p className="hero__me mono dim">
@@ -45,7 +45,7 @@ export default async function Home() {
               <span className="frame__label mono">LIVE / 横展開マップ</span>
               <FlowMap teams={listTeamSummaries()} flows={listFlows()} compact />
               <Link href="/teams" className="frame__link mono">
-                VIEW ALL TEAMS →
+                VIEW ALL GUILDS →
               </Link>
             </div>
           </div>
@@ -61,9 +61,9 @@ export default async function Home() {
 
       <section className="wrap steps">
         {[
-          ["01", "困りごとを出す", "手でやっていること、時間を取られていることを、そのまま書く。"],
-          ["02", "解決策とつながる", "よそのチームが、もう同じことを解いているかもしれない。"],
-          ["03", "横へ広げる", "取り入れたら「横展開した」を押す。工夫が IT Div. の資産になる。"],
+          ["01", "事例を探す", "よそのチームが、もう同じことを解いているかもしれない。"],
+          ["02", "賢者と企画する", "悩みのひとことから、あるべき姿・課題・解決策・効果の試算まで。"],
+          ["03", "共有して広げる", "クエストとして出し、取り入れたら「横展開した」。行いが XP になる。"],
         ].map(([n, t, d]) => (
           <div key={n} className="step">
             <span className="step__n mono">{n}</span>
@@ -73,7 +73,7 @@ export default async function Home() {
         ))}
       </section>
 
-      <Section en="WAITING FOR SOLUTIONS" title="解決策を待っている困りごと" more="/explore?open=1&sort=popular">
+      <Section en="OPEN QUESTS" title="解決策を待っているクエスト（報酬つき）" more="/explore?open=1&sort=popular">
         <div className="grid grid--3">
           {waiting.map((p) => (
             <PostCard key={p.id} post={p} />

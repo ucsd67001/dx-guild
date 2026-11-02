@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import type { Plan } from "./ai";
 
 // 見本データ。⚠️ チームも人も、すべて架空。実在の人やチームの名前を入れない
 
@@ -234,6 +235,81 @@ const COMMENTS: [number, number, string, number][] = [
   [16, 2, "ヘルプデスクの一次受付でも試してみたいです。", 5],
 ];
 
+// 賢者の工房の見本（AI につないでいなくても、企画書の画面が見られるように）
+const FORGE: {
+  user: number; daysAgo: number; worry: string;
+  messages: { role: "user" | "assistant"; content: string }[];
+  plan?: Plan; problemPost?: number; solutionPost?: number;
+}[] = [
+  {
+    user: 1, daysAgo: 2,
+    worry: "毎週月曜の朝に、先週の問い合わせ件数を Excel で集計して上に報告している。正直めんどう",
+    messages: [
+      { role: "assistant", content: "月曜の朝の集計、地味に効きますよね。まず状況を教えてください。集計には毎回どのくらい時間がかかっていて、何人で担当していますか？ 元のデータはどこにありますか？" },
+      { role: "user", content: "ServiceNow から CSV を出して、ピボットで分類ごとに数えて、グラフを貼って、コメントを書いてメールしてる。1回90分くらい。私ともう1人の交代制。" },
+      { role: "assistant", content: "ありがとうございます。では、本当はどうなっていてほしいですか？ 報告を受ける側は、その数字を見て何を決めていますか？" },
+      { role: "user", content: "本当は数字は勝手にできていて、私は「先週なにが起きたか」のコメントだけ書きたい。上は増えた分類を見て、応援の人を回すかどうか決めてる。" },
+      { role: "assistant", content: "いい整理です。社内では SOL-0009「SharePoint リスト ＋ Power Automate で、月次報告を自動で集計する」（IT企画）が、集計の自動化で月16時間を4時間にしています。CSV を出す所から自動にできるか、ServiceNow の権限は確かめられそうですか？" },
+      { role: "user", content: "レポートの定期実行は使えるはず。メールで CSV が届くようにはできると思う。" },
+      { role: "assistant", content: "材料がそろいました。「企画書にまとめる」を押すと、あるべき姿・問題・課題・解決策の形に整理します。" },
+    ],
+    plan: {
+      title: "週次の問い合わせ報告を、数字づくりから解放する",
+      to_be: "月曜の朝には先週の数字とグラフができあがっていて、担当者は「何が起きたか」のコメントを書くことだけに時間を使っている。上長は増えた分類をすぐ見て、応援の判断ができている。",
+      as_is: "毎週月曜に、ServiceNow から CSV を出し、Excel のピボットで分類ごとに数え、グラフを貼ってメールで報告している。1回90分、2人の交代制。",
+      problem: "判断に使う数字をつくる作業に、毎週90分の人手がかかっている。肝心のコメントを考える時間が削られ、数字が出るのも月曜の昼になる。",
+      issues: ["CSV の取り出しを人の手から外す", "集計とグラフを決まった形で自動でつくる", "コメントを書く場所と、届け方を決める"],
+      solutions: [
+        {
+          name: "定期レポート＋自動集計",
+          summary: "ServiceNow の定期レポートで CSV をメールで受け取り、Power Automate が集計して SharePoint のリストとグラフを更新する。",
+          approach: "ServiceNow のスケジュールレポートで、毎週月曜6時に CSV を共有メールボックスへ送る。Power Automate が添付を読み、分類ごとの件数を SharePoint リストに書く。グラフは Excel Online か Power BI でリストを参照する。担当者はコメント欄だけを埋めて、Teams に投稿する。",
+          tools: ["ServiceNow", "Power Automate", "SharePoint", "Microsoft Teams"],
+          steps: [
+            { title: "報告の形を決める", detail: "いまの報告から、必ず要る数字とグラフを3つに絞る", duration: "2日" },
+            { title: "定期レポートを設定する", detail: "ServiceNow で週次の CSV を共有メールボックスへ送る", duration: "1日" },
+            { title: "集計のフローを作る", detail: "SOL-0009 のフローを借りて、CSV からリストへ書き込む形に替える", duration: "1週間" },
+            { title: "2週間並べて試す", detail: "手作業の数字と比べて、ずれが無いか確かめる", duration: "2週間" },
+          ],
+          difficulty: "易しい",
+          estimate: { times_per_month: 4, minutes_per_time: 90, people: 1, reduction_rate: 0.75, assumptions: "回数・時間・人数は対話から（週1回・90分・交代制なので1人分）。削減率は、コメントを書く20分ほどが残るとして推定。" },
+          impact_path: { output: "週の集計作業が90分 → 20分ほどに", outcome: "月曜の朝いちばんに数字が出て、応援の判断が半日早くなる", impact: "問い合わせの待ち時間が減り、依頼する社員の満足度が上がる" },
+          risks: ["ServiceNow の分類が変わると、フローも直す必要がある", "フローの持ち主を2人にしておく"],
+        },
+        {
+          name: "AI がコメントの下書きまで書く",
+          summary: "自動集計に加えて、先週との差と目立つチケットから、AI が「何が起きたか」の下書きを書く。",
+          approach: "案1の仕組みに、Azure OpenAI でコメントの下書きをつくる手順を足す。増えた分類と、その分類の代表的なチケットの件名を渡し、3行の下書きを作らせる。担当者は直して送るだけ。",
+          tools: ["Power Automate", "Azure OpenAI", "SharePoint", "Microsoft Teams"],
+          steps: [
+            { title: "案1を動かす", detail: "まず自動集計を安定させる", duration: "3週間" },
+            { title: "下書きの型を決める", detail: "良かった過去のコメントを5つ選び、型にする", duration: "3日" },
+            { title: "下書きを足す", detail: "フローに AI の手順を足し、Teams に下書きとして出す", duration: "1週間" },
+          ],
+          difficulty: "ふつう",
+          estimate: { times_per_month: 4, minutes_per_time: 90, people: 1, reduction_rate: 0.9, assumptions: "案1に加えて、コメントの20分が数分になるとして推定。" },
+          impact_path: { output: "週の作業が90分 → 10分ほどに", outcome: "コメントの観点がそろい、週ごとの比較がしやすくなる", impact: "問い合わせの傾向に早く手を打てるようになり、問い合わせそのものが減る" },
+          risks: ["チケットの件名に個人の情報が入ることがあるので、渡す項目を絞る", "下書きをそのまま送らず、必ず人が読む"],
+        },
+      ],
+      recommended_index: 0,
+      recommended_reason: "SOL-0009 の仕組みを借りられるので、2週間ほどで効果が出せる。AI の下書きは、数字が安定してから足すほうが失敗が小さい。",
+      related_case_ids: [9, 6],
+      first_step: "今週の報告から、上長が実際に見ている数字とグラフを3つに絞って書き出す。",
+      category: "データ集計・レポート",
+      tags: ["週次報告", "集計", "ServiceNow", "自動化"],
+    },
+  },
+  {
+    user: 10, daysAgo: 1,
+    worry: "テスト環境を使いたい人からの依頼が Teams のチャットでばらばらに来て、だれがいつ使っているか分からなくなる",
+    messages: [
+      { role: "assistant", content: "依頼がばらばらに来ると、管理する側は大変ですね。まず状況を教えてください。依頼は月に何件くらいで、1件の対応にどのくらいかかっていますか？" },
+      { role: "user", content: "月に30件くらい。空きを確かめて返事して、表に書くのに1件10分くらい。たまにダブルブッキングする。" },
+    ],
+  },
+];
+
 export function seed(db: Database.Database) {
   const run = db.transaction(() => {
     const team = db.prepare("INSERT INTO teams (id, name, code, mission) VALUES (?, ?, ?, ?)");
@@ -269,6 +345,16 @@ export function seed(db: Database.Database) {
     const comment = db.prepare(`
       INSERT INTO comments (post_id, user_id, body, created_at) VALUES (?, ?, ?, datetime('now', ?))`);
     for (const [p, u, body, d] of COMMENTS) comment.run(p, u, body, ago(d));
+
+    const forge = db.prepare(`
+      INSERT INTO forge_sessions (user_id, team_id, worry, messages, plan, problem_post_id, solution_post_id, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now', ?), datetime('now', ?))`);
+    for (const f of FORGE) {
+      forge.run(
+        f.user, teamOf.get(f.user), f.worry, JSON.stringify(f.messages), f.plan ? JSON.stringify(f.plan) : null,
+        f.problemPost ?? null, f.solutionPost ?? null, ago(f.daysAgo), ago(f.daysAgo),
+      );
+    }
   });
   run();
 }

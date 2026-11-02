@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { getCurrentUser, getPost, listPosts } from "@/lib/data";
 import { createPost } from "@/lib/actions";
-import { CATEGORIES, STAGES, TOOLS, postCode } from "@/lib/constants";
+import { CATEGORIES, HOURLY_COST, STAGES, TOOLS, postCode } from "@/lib/constants";
+import { EffectCalculator } from "@/components/EffectCalculator";
 
 export const metadata: Metadata = { title: "投稿する" };
 
@@ -69,21 +70,14 @@ export default async function NewPost({ searchParams }: { searchParams: Promise<
           />
         </label>
 
-        <div className="form__row">
-          <label className="field">
-            <span className="field__label">分類</span>
-            <select name="category" defaultValue={linked?.category ?? CATEGORIES[0]}>
-              {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-            </select>
-          </label>
-          <label className="field">
-            <span className="field__label">
-              <span className="only-problem">手作業にかかる時間（月・時間）</span>
-              <span className="only-solution">減った時間（月・時間）</span>
-            </span>
-            <input name="hours" type="number" min={0} step={0.5} inputMode="decimal" placeholder="例：12" />
-          </label>
-        </div>
+        <label className="field">
+          <span className="field__label">分類</span>
+          <select name="category" defaultValue={linked?.category ?? CATEGORIES[0]}>
+            {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+          </select>
+        </label>
+
+        <EffectCalculator hourlyCost={HOURLY_COST} />
 
         <fieldset className="field">
           <legend className="field__label">

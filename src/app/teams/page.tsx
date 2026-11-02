@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { listFlows, listTeamSummaries } from "@/lib/data";
 import { FlowMap } from "@/components/FlowMap";
 
-export const metadata: Metadata = { title: "チーム" };
+export const metadata: Metadata = { title: "ギルド" };
 
 export default function Teams() {
   const teams = listTeamSummaries();
@@ -11,8 +11,8 @@ export default function Teams() {
 
   return (
     <div className="wrap page">
-      <p className="eyebrow">TEAMS</p>
-      <h1 className="page__title">チームと横展開の流れ</h1>
+      <p className="eyebrow">GUILDS</p>
+      <h1 className="page__title">ギルド（チーム）と横展開の流れ</h1>
       <p className="lead">どのチームの工夫が、どのチームへ渡っているか。線の向きは「作ったチーム → 取り入れたチーム」です。</p>
 
       <div className="teams-layout">

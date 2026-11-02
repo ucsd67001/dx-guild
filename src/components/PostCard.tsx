@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Post } from "@/lib/data";
 import { KIND_LABEL, STAGES, fmtDate, postCode } from "@/lib/constants";
+import { bountyOf } from "@/lib/game";
 
 export function KindBadge({ post }: { post: Pick<Post, "kind" | "stage"> }) {
   return (
@@ -19,6 +20,9 @@ export function PostCard({ post }: { post: Post }) {
       <div className="card__meta">
         <KindBadge post={post} />
         <span className="mono dim">{postCode(post.kind, post.id)}</span>
+        {post.kind === "problem" && post.solutions === 0 && (
+          <span className="bounty mono" title="この困りごとに解決策で答えると、もらえる経験値">+{bountyOf(post.metoo)} XP</span>
+        )}
         <span className="card__team mono">{post.teamCode}</span>
       </div>
       <h3 className="card__title">{post.title}</h3>

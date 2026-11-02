@@ -60,6 +60,21 @@ CREATE TABLE IF NOT EXISTS adoptions (
   UNIQUE (solution_id, team_id)
 );
 
+-- 賢者の工房：AI との壁打ち。悩み → 対話 → 企画書（plan）→ 共有（投稿）
+CREATE TABLE IF NOT EXISTS forge_sessions (
+  id               INTEGER PRIMARY KEY,
+  user_id          INTEGER NOT NULL REFERENCES users(id),
+  team_id          INTEGER NOT NULL REFERENCES teams(id),
+  worry            TEXT NOT NULL,                -- 最初のひとこと（悩み・不満）
+  messages         TEXT NOT NULL DEFAULT '[]',   -- JSON [{ role: 'user' | 'assistant', content }]
+  plan             TEXT,                         -- JSON。企画書にまとめたら入る
+  demo             INTEGER NOT NULL DEFAULT 0,   -- 1＝AI につながず、デモの応答で作った
+  problem_post_id  INTEGER REFERENCES posts(id) ON DELETE SET NULL,
+  solution_post_id INTEGER REFERENCES posts(id) ON DELETE SET NULL,
+  created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS comments (
   id         INTEGER PRIMARY KEY,
   post_id    INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,

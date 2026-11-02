@@ -53,3 +53,42 @@ export function postCode(kind: Kind, id: number) {
 export function fmtDate(s: string) {
   return s.slice(0, 10).replaceAll("-", ".");
 }
+
+// ── プロダクト ─────────────────────────────
+// ⚠️ 名前を替えるときは、ここと README・CLAUDE.md・docs/hackathon.md
+export const PRODUCT = {
+  name: "QuestForge",
+  kana: "クエストフォージ",
+  tagline: "悩みを、クエストに。閃きを、成果に。",
+};
+
+// 効果をお金に換える時間単価（円／時間）。社内の基準に合わせて .env.local で替える
+export const HOURLY_COST = Number(process.env.QF_HOURLY_COST) || 5000;
+
+export function yen(n: number) {
+  return `${Math.round(n).toLocaleString()}円`;
+}
+
+// 狭い欄に置く金額（18万円）。単位の「万円」は呼ぶ側で添える
+export function man(n: number) {
+  return (n / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 });
+}
+
+// 効果の試算。AI には数字の前提だけを出させ、計算はここで行う（AI に掛け算をさせない）
+export type EffortInput = {
+  timesPerMonth: number;
+  minutesPerTime: number;
+  people: number;
+  reductionRate: number; // 0〜1
+};
+
+export function calcEffect(e: EffortInput) {
+  const rate = Math.min(Math.max(e.reductionRate, 0), 1);
+  const current = (Math.max(e.timesPerMonth, 0) * Math.max(e.minutesPerTime, 0) * Math.max(e.people, 0)) / 60;
+  const saved = current * rate;
+  return {
+    currentHours: Math.round(current * 10) / 10,
+    savedHours: Math.round(saved * 10) / 10,
+    savedYenPerYear: saved * 12 * HOURLY_COST,
+  };
+}

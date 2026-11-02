@@ -12,7 +12,8 @@ import {
   listSolutionsFor,
 } from "@/lib/data";
 import { addComment, adoptSolution, toggleReaction, withdrawAdoption } from "@/lib/actions";
-import { STAGES, fmtDate, postCode } from "@/lib/constants";
+import { HOURLY_COST, STAGES, fmtDate, man, postCode } from "@/lib/constants";
+import { bountyOf } from "@/lib/game";
 import { KindBadge, PostCard } from "@/components/PostCard";
 
 type Props = { params: Promise<{ id: string }> };
@@ -146,7 +147,14 @@ export default async function PostPage({ params }: Props) {
                 <Figure value={adoptions.length} unit="チーム" label="横展開した" accent />
               )}
               {!isProblem && post.stage && <Figure value={STAGES[post.stage]} label="段階" />}
+              {!isProblem && post.hours != null && (
+                <Figure value={man(post.hours * 12 * HOURLY_COST * (1 + adoptions.length))} unit="万円" label="年あたり（使っている全チーム）" accent />
+              )}
+              {isProblem && post.solutions === 0 && <Figure value={`+${bountyOf(post.metoo)}`} unit="XP" label="解決した人への報酬" accent />}
             </div>
+            {isProblem && post.solutions === 0 && (
+              <Link href={`/forge`} className="small forge-link">✦ 自分で解決策を考えてみる（賢者の工房）</Link>
+            )}
 
             <form action={toggleReaction}>
               <input type="hidden" name="postId" value={post.id} />
