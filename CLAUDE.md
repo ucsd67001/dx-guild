@@ -4,7 +4,8 @@
 
 IT Div. の困りごとと解決策を共有し、AI の賢者と企画し、横展開するためのギルド（ローカルの試作）。
 **中身・動かし方・作りは `README.md`。**ここには、知らずに触ると壊すことだけを書く。
-（名前は v0.1 が Yokoten、v0.2 が QuestForge、v0.3 から DXギルド。名前は `src/lib/constants.ts` の `PRODUCT` から画面と AI の指示に渡る。フォルダ名の `yokoten` は、持ち主があとで変える予定）
+（名前は v0.1 が Yokoten、v0.2 が QuestForge、v0.3 から DXギルド。名前は `src/lib/constants.ts` の `PRODUCT` から画面と AI の指示に渡る。フォルダ名は 2026-11-02 に `yokoten` から `dx-guild` に変えた）
+- ⚠️ **フォルダ名を変えるときは、開発サーバーを止め、Claude のセッションもそのフォルダの外に出てから。**中で動いているあいだは Windows がフォルダを掴んでいて、名前を変えられない
 
 - ⚠️ **報告は日本語で。**このリポジトリの持ち主はバイブコーディング。専門用語には言い換えを添え、選択肢はおすすめと理由をつけて本文に書く
 - ⚠️ **Next.js 16。**`params` と `searchParams` と `cookies()` は Promise（`await` する）。書く前に `node_modules/next/dist/docs/` を見る
