@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { listPosts, type Post } from "./data";
-import type { ChatMessage, Plan } from "./ai";
+import { alignEffectText, type ChatMessage, type Plan } from "./ai";
 
 // 賢者の工房（AI との壁打ち）の記録
 
@@ -29,7 +29,7 @@ const SELECT = `
   FROM forge_sessions f JOIN users u ON u.id = f.user_id JOIN teams t ON t.id = f.team_id`;
 
 function toSession(r: Row): ForgeSession {
-  return { ...r, messages: JSON.parse(r.messages), plan: r.plan ? JSON.parse(r.plan) : null, demo: r.demo === 1 };
+  return { ...r, messages: JSON.parse(r.messages), plan: r.plan ? alignEffectText(JSON.parse(r.plan)) : null, demo: r.demo === 1 };
 }
 
 export function getForgeSession(id: number) {

@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { z } from "zod";
-import { CATEGORIES, PRODUCT, postCode, type EffortInput } from "./constants";
+import { CATEGORIES, PRODUCT, calcEffect, postCode, type EffortInput } from "./constants";
 import type { Post } from "./data";
 
 // ============================================================
@@ -113,9 +113,9 @@ const SolutionSchema = z.object({
   difficulty: z.enum(["易しい", "ふつう", "難しい"]),
   estimate: EstimateSchema,
   impact_path: z.object({
-    output: z.string().describe("効果（アウトプット）：時間・件数など、直接変わること"),
-    outcome: z.string().describe("成果（アウトカム）：効果から生まれる、業務や人の変化"),
-    impact: z.string().describe("インパクト：コスト・品質・満足度など、組織にとっての意味"),
+    output: z.string().describe("効果（アウトプット）：直接変わること。言葉で書き、分・時間・割合の数字は書かない"),
+    outcome: z.string().describe("成果（アウトカム）：効果から生まれる、業務や人の変化。数字は書かない"),
+    impact: z.string().describe("インパクト：コスト・品質・満足度など、組織にとっての意味。数字は書かない"),
   }),
   risks: z.array(z.string()).describe("気をつけること。2〜3個"),
 });
@@ -173,6 +173,7 @@ const PLAN_SYSTEM = `あなたは、IT 部門の社内コミュニティ「${PRO
 - 各案のステップは、明日から動ける粒度で。期間の目安をつけます。
 - 効果は「効果（アウトプット）→ 成果（アウトカム）→ インパクト」の流れで書きます。
 - 金額の計算はしません。回数・分・人数・削減率の前提だけを出します（計算は画面側で行います）。
+- 効果・成果・インパクトの文は言葉で書きます。時間や割合の数字は、画面が試算から入れます。
 - 社内の事例の番号は、一覧にあるものだけを使います。
 - 日本語の、です・ます調で書きます。`;
 
@@ -230,8 +231,39 @@ export async function* sageReply(worry: string, history: ChatMessage[], cases: P
 
 // ── 企画書 ──────────────────────────────────
 
+// ⚠️ 効果の文の数字は、AI に書かせない。AI は「30分 × 7割減」を「21分から9分」と書き違えた（2026-11-02）。
+// 指示だけでは止まらないので、効果（アウトプット）の文は試算からコードで作り、
+// 成果・インパクトの文からは、数字の入った一文を落とす。読み出すたびに掛けるので、前に作った企画書にも効く
+const NUMBER_CLAIM = /[0-9０-９]+(?:[.．][0-9０-９]+)?\s*(?:分|時間|ｈ|h|％|%|割|倍|万?円|件|回|人|日|週|か月|ヶ月)|[一二三四五六七八九十]割/;
+
+const fmtNum = (n: number) => String(Math.round(n * 10) / 10);
+
+export function alignEffectText(plan: Plan): Plan {
+  return {
+    ...plan,
+    solutions: plan.solutions.map((s) => {
+      const e = toEffort(s.estimate);
+      const { currentHours, savedHours } = calcEffect(e);
+      const rate = Math.min(Math.max(e.reductionRate, 0), 1);
+      const after = e.minutesPerTime * (1 - rate);
+      const dropNumbers = (text: string) => {
+        const kept = text.split(/(?<=。)/).filter((t) => !NUMBER_CLAIM.test(t)).join("");
+        return kept.trim() || text; // 全部落ちるときは、元の文のまま
+      };
+      return {
+        ...s,
+        impact_path: {
+          output: `1回 ${fmtNum(e.minutesPerTime)} 分の作業が、約 ${Math.round(after)} 分になる（月 ${fmtNum(currentHours)} 時間 → ${fmtNum(currentHours - savedHours)} 時間）`,
+          outcome: dropNumbers(s.impact_path.outcome),
+          impact: dropNumbers(s.impact_path.impact),
+        },
+      };
+    }),
+  };
+}
+
 export async function makePlan(worry: string, history: ChatMessage[], cases: Post[]): Promise<Plan> {
-  if (!aiConnected()) return demoPlan(worry, history, cases);
+  if (!aiConnected()) return alignEffectText(demoPlan(worry, history, cases));
   const plan = await askStructured(
     "plan",
     PlanSchema,
@@ -244,7 +276,7 @@ export async function makePlan(worry: string, history: ChatMessage[], cases: Pos
   const known = new Set(cases.map((c) => c.id));
   plan.related_case_ids = plan.related_case_ids.filter((id) => known.has(id));
   plan.recommended_index = Math.min(Math.max(plan.recommended_index, 0), plan.solutions.length - 1);
-  return plan;
+  return alignEffectText(plan);
 }
 
 // ── 投稿の効果の見積もり ───────────────────────
