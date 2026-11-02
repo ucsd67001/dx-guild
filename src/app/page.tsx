@@ -1,0 +1,146 @@
+import Link from "next/link";
+import { getCurrentUser, getStats, listFlows, listPosts, listTeamSummaries } from "@/lib/data";
+import { FlowMap } from "@/components/FlowMap";
+import { PostCard } from "@/components/PostCard";
+
+export default async function Home() {
+  const me = await getCurrentUser();
+  const stats = getStats();
+  const waiting = listPosts({ open: true, sort: "popular", limit: 3 });
+  const spreading = listPosts({ kind: "solution", sort: "popular", limit: 3 });
+  const latest = listPosts({ sort: "new", limit: 6 });
+
+  return (
+    <>
+      <section className="hero">
+        <div className="wrap hero__inner">
+          <div className="hero__copy">
+            <p className="eyebrow">
+              <span className="eyebrow__dot" />
+              IT DIV. / KNOWLEDGE EXCHANGE PLATFORM
+            </p>
+            <h1 className="hero__title">
+              チームの工夫を、
+              <br />
+              <span className="hero__accent">横へ</span>広げる<span className="hero__dot">.</span>
+            </h1>
+            <p className="lead">
+              手作業の困りごとと、ノーコード・ローコード・AI エージェントでの解決策を、チームの外へ。
+              同じことに悩むチームと、もう解いたチームをつなぎます。
+            </p>
+            <div className="hero__actions">
+              <Link href="/new?kind=problem" className="btn btn--primary">
+                困りごとを出す <span aria-hidden>→</span>
+              </Link>
+              <Link href="/new?kind=solution" className="btn btn--ghost">
+                解決策を共有する
+              </Link>
+            </div>
+            <p className="hero__me mono dim">
+              SIGNED IN AS <b>{me.name}</b> / {me.teamName}（{me.teamCode}）
+            </p>
+          </div>
+          <div className="hero__visual">
+            <div className="frame">
+              <span className="frame__label mono">LIVE / 横展開マップ</span>
+              <FlowMap teams={listTeamSummaries()} flows={listFlows()} compact />
+              <Link href="/teams" className="frame__link mono">
+                VIEW ALL TEAMS →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="wrap stats">
+        <Stat label="PROBLEMS" title="困りごと" value={stats.problems} note={`うち解決策待ち ${stats.openProblems}件`} />
+        <Stat label="SOLUTIONS" title="解決策" value={stats.solutions} note={`${stats.teamsSharing}チームが投稿`} />
+        <Stat label="ADOPTIONS" title="横展開" value={stats.adoptions} note="ほかのチームが取り入れた数" accent />
+        <Stat label="HOURS SAVED / MONTH" title="減った時間（月）" value={Math.round(stats.hoursSaved)} unit="h" note="投稿者の申告 × 使っているチーム数" />
+      </section>
+
+      <section className="wrap steps">
+        {[
+          ["01", "困りごとを出す", "手でやっていること、時間を取られていることを、そのまま書く。"],
+          ["02", "解決策とつながる", "よそのチームが、もう同じことを解いているかもしれない。"],
+          ["03", "横へ広げる", "取り入れたら「横展開した」を押す。工夫が IT Div. の資産になる。"],
+        ].map(([n, t, d]) => (
+          <div key={n} className="step">
+            <span className="step__n mono">{n}</span>
+            <h3>{t}</h3>
+            <p>{d}</p>
+          </div>
+        ))}
+      </section>
+
+      <Section en="WAITING FOR SOLUTIONS" title="解決策を待っている困りごと" more="/explore?open=1&sort=popular">
+        <div className="grid grid--3">
+          {waiting.map((p) => (
+            <PostCard key={p.id} post={p} />
+          ))}
+        </div>
+      </Section>
+
+      <Section en="SPREADING NOW" title="いま横に広がっている解決策" more="/explore?kind=solution&sort=popular">
+        <div className="grid grid--3">
+          {spreading.map((p) => (
+            <PostCard key={p.id} post={p} />
+          ))}
+        </div>
+      </Section>
+
+      <Section en="LATEST" title="新着" more="/explore">
+        <div className="grid grid--3">
+          {latest.map((p) => (
+            <PostCard key={p.id} post={p} />
+          ))}
+        </div>
+      </Section>
+    </>
+  );
+}
+
+function Stat({
+  label,
+  title,
+  value,
+  unit,
+  note,
+  accent,
+}: {
+  label: string;
+  title: string;
+  value: number;
+  unit?: string;
+  note: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className={`stat${accent ? " stat--accent" : ""}`}>
+      <span className="stat__label mono">{label}</span>
+      <span className="stat__value mono">
+        {value.toLocaleString()}
+        {unit && <small>{unit}</small>}
+      </span>
+      <span className="stat__title">{title}</span>
+      <span className="stat__note dim">{note}</span>
+    </div>
+  );
+}
+
+function Section({ en, title, more, children }: { en: string; title: string; more: string; children: React.ReactNode }) {
+  return (
+    <section className="wrap section">
+      <div className="section__head">
+        <div>
+          <p className="eyebrow eyebrow--sm">{en}</p>
+          <h2 className="section__title">{title}</h2>
+        </div>
+        <Link href={more} className="more mono">
+          SEE ALL →
+        </Link>
+      </div>
+      {children}
+    </section>
+  );
+}
