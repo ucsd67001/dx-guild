@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { IBM_Plex_Mono, IBM_Plex_Sans_JP } from "next/font/google";
+import { Chakra_Petch, IBM_Plex_Mono, IBM_Plex_Sans_JP } from "next/font/google";
 import "./globals.css";
 import { PRODUCT } from "@/lib/constants";
 import { getCurrentUser, listUsers } from "@/lib/data";
@@ -9,7 +9,7 @@ import { getAdventurer } from "@/lib/game";
 import { NavLinks } from "@/components/NavLinks";
 import { UserSwitcher } from "@/components/UserSwitcher";
 
-// 和文は IBM Plex Sans JP、数字と英字の札は IBM Plex Mono
+// 和文は IBM Plex Sans JP。英字の札・見出しの数字は Chakra Petch（HUD らしい角ばった字）、表の小さな数字は IBM Plex Mono
 const sans = IBM_Plex_Sans_JP({
   weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
@@ -18,6 +18,7 @@ const sans = IBM_Plex_Sans_JP({
   preload: false,
 });
 const mono = IBM_Plex_Mono({ weight: ["400", "500", "600"], subsets: ["latin"], variable: "--font-mono", display: "swap" });
+const display = Chakra_Petch({ weight: ["500", "600", "700"], subsets: ["latin"], variable: "--font-display", display: "swap" });
 
 export const metadata: Metadata = {
   title: { default: `${PRODUCT.name} — ${PRODUCT.tagline}`, template: `%s ｜ ${PRODUCT.name}` },
@@ -28,7 +29,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const [me, users] = [await getCurrentUser(), listUsers()];
   const hero = getAdventurer(me.id);
   return (
-    <html lang="ja" className={`${sans.variable} ${mono.variable}`}>
+    <html lang="ja" className={`${sans.variable} ${mono.variable} ${display.variable}`}>
       <body>
         <div className="backdrop" aria-hidden />
         <header className="header">

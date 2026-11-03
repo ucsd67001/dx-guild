@@ -18,7 +18,7 @@ IT Div. の困りごとと解決策を共有し、AI の賢者と企画し、横
 - 決まった形の答えは、zod の形を `z.toJSONSchema` で strict な JSON Schema にして渡し、返ってきたものを zod で確かめ直す（`askStructured`）。`gpt-4.1-mini` に `reasoning_effort` を渡すと断られる（考えるモデルに替えたときだけ `DXG_REASONING_EFFORT` を入れる）。`openai` は 7.38.0 に固定
 - **経験値は記録から数え直す**（`game.ts`）。XP の表を作らない
 - **解決策の投稿には段階がある**：挑戦中（`challenge`）→ 成功事例（`success`）／学び（`lesson`）。変えられるのは挑戦した本人の `reportResult` だけ。⚠️ **横展開・減った時間・金額・クエストの報酬は、成功事例だけで数える**（挑戦中の時間は見込み）。学びは「答えた解決策」にも数えない（その困りごとは挑戦者待ちのまま）。リアクションの種類は段階で決まる（`REACTION_OF`）
-- 見た目の考え方は `src/app/globals.css` の頭。色は `:root` の変数だけを使う。グラフの青緑（`--teal`）と緑は、色の見分けを確かめた値。変えるなら確かめ直す
+- 見た目の考え方は `src/app/globals.css` の頭（2026-11-03 に、持ち主の希望で明るい地から**暗い地の HUD** に替えた。Deloitte の緑にはこだわらない）。色は `:root` の変数だけを使い、**役割の名前**で呼ぶ（`--accent` シアン・`--quest` 琥珀・`--success` ミント・`--violet` 紫）。グラフの棒の `--chart-problem`／`--chart-solution` は、暗い地で色の見分けを確かめた値。変えるなら dataviz の `validate_palette.js --mode dark` で確かめ直す。⚠️ 暗い地なので、`#fff` の字や `var(--ink)` の塗りを足さない（`--ink` は明るい字の色）
 - 持ち主に渡すコマンドは **PowerShell 5.1** で動く形（`&&` を使わない）
 - 直したら `npm run typecheck` と `npm run lint`。画面はブラウザで開いて確かめる（スマホの幅でも、横にはみ出さないか）
 - ⚠️ 参考にした前職の資料（DX-STANDARD）からは、**考え方だけ**を借りている。文や図をそのまま写さない
