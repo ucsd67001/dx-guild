@@ -42,7 +42,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <NavLinks />
             <div className="header__right">
               {hero && (
-                <Link href="/ranking" className="lvchip" title={`${hero.title}・${hero.xp} XP`}>
+                <Link href="/me" className="lvchip" title={`${hero.title}・${hero.xp} XP`}>
                   <span className="lvchip__lv mono">Lv{hero.level}</span>
                   <span className="lvchip__bar"><span style={{ width: `${Math.round(hero.progress * 100)}%` }} /></span>
                 </Link>
@@ -59,6 +59,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <div className="wrap footer__inner">
             <span className="mono dim">{PRODUCT.en} / {PRODUCT.version} — LOCAL PROTOTYPE</span>
             <span className="dim">{PRODUCT.tagline}</span>
+            <span className="footer__links mono">
+              <Link href="/admin">WATCHTOWER / 物見の塔</Link>
+            </span>
           </div>
         </footer>
       </body>

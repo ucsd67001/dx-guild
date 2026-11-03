@@ -67,10 +67,6 @@ export function listTeams(): Team[] {
   return db.prepare("SELECT * FROM teams ORDER BY id").all() as Team[];
 }
 
-export function getTeam(id: number): Team | undefined {
-  return db.prepare("SELECT * FROM teams WHERE id = ?").get(id) as Team | undefined;
-}
-
 export const USER_COOKIE = "dg_uid";
 
 // ⚠️ ログインはまだ無い。画面の右上で「だれとして使うか」を選び、クッキーに持つだけ。
@@ -96,6 +92,7 @@ export type PostFilter = {
   category?: string;
   tool?: string;
   team?: number;
+  author?: number;
   sort?: "new" | "popular" | "impact";
   open?: boolean; // 挑戦も解決策もまだ無い困りごとだけ（学びだけのものは含む）
   limit?: number;
@@ -108,6 +105,7 @@ export function listPosts(f: PostFilter = {}): Post[] {
   if (f.stage) { where.push("p.stage = ?"); args.push(f.stage); }
   if (f.category) { where.push("p.category = ?"); args.push(f.category); }
   if (f.team) { where.push("p.team_id = ?"); args.push(f.team); }
+  if (f.author) { where.push("p.author_id = ?"); args.push(f.author); }
   if (f.tool) { where.push("EXISTS (SELECT 1 FROM json_each(p.tools) WHERE value = ?)"); args.push(f.tool); }
   if (f.open) where.push(`p.kind = 'problem' AND ${NO_ANSWER}`);
   if (f.q) {
@@ -220,44 +218,4 @@ export function getStats(): Stats {
       (SELECT COUNT(DISTINCT team_id) FROM posts) AS teamsSharing,
       (SELECT COALESCE(SUM(p.hours * (1 + (SELECT COUNT(*) FROM adoptions a WHERE a.solution_id = p.id))), 0)
          FROM posts p WHERE p.stage = 'success') AS hoursSaved`).get() as Stats;
-}
-
-// 横展開の流れ：どのチームの解決策が、どのチームへ渡ったか
-export type Flow = { from: number; to: number; count: number };
-
-export function listFlows(): Flow[] {
-  return db.prepare(`
-    SELECT s.team_id AS "from", a.team_id AS "to", COUNT(*) AS count
-    FROM adoptions a JOIN posts s ON s.id = a.solution_id
-    GROUP BY s.team_id, a.team_id`).all() as Flow[];
-}
-
-export type TeamSummary = Team & {
-  members: number;
-  problems: number;
-  solutions: number;
-  given: number;  // このチームの解決策を入れたよそのチームの数（のべ）
-  taken: number;  // このチームが入れたよその解決策の数
-};
-
-export function listTeamSummaries(): TeamSummary[] {
-  return db.prepare(`
-    SELECT t.*,
-      (SELECT COUNT(*) FROM users u WHERE u.team_id = t.id) AS members,
-      (SELECT COUNT(*) FROM posts p WHERE p.team_id = t.id AND p.kind = 'problem')  AS problems,
-      (SELECT COUNT(*) FROM posts p WHERE p.team_id = t.id AND p.kind = 'solution') AS solutions,
-      (SELECT COUNT(*) FROM adoptions a JOIN posts s ON s.id = a.solution_id WHERE s.team_id = t.id) AS given,
-      (SELECT COUNT(*) FROM adoptions a WHERE a.team_id = t.id) AS taken
-    FROM teams t ORDER BY t.id`).all() as TeamSummary[];
-}
-
-export function listMembers(teamId: number): User[] {
-  return db.prepare(`${USER_SELECT} WHERE u.team_id = ? ORDER BY u.id`).all(teamId) as User[];
-}
-
-// このチームが入れた、よそのチームの解決策
-export function listAdoptedBy(teamId: number): Post[] {
-  return (db.prepare(`${POST_SELECT}
-    WHERE p.id IN (SELECT solution_id FROM adoptions WHERE team_id = ?)
-    ORDER BY p.created_at DESC`).all(teamId) as PostRow[]).map(toPost);
 }

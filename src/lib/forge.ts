@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { listPosts, type Post } from "./data";
+import type { Stage } from "./constants";
 import { alignEffectText, type ChatMessage, type Plan } from "./ai";
 
 // 賢者の工房（AI との壁打ち）の記録
@@ -54,11 +55,9 @@ export function savePlan(id: number, plan: Plan, demo: boolean) {
     .run(JSON.stringify(plan), demo ? 1 : 0, id);
 }
 
-// 悩みの文章に近い社内の投稿を探す（AI に渡す「社内の事例」）。
-// 言葉の重なりで数える簡単なもの。⚠️ 事例が増えたら、意味で探す形（埋め込み）に替える
-export function searchCases(text: string, limit = 5): Post[] {
-  // 漢字かカタカナを含む二文字（「請求」「コピ」「問い」）と、英語の一語（「Excel」）を手がかりにする。
-  // 「書の」「てい」のような、助詞を含む二文字やひらがなだけの二文字は、どの文にもあるので数えない
+// 文章の手がかり：漢字かカタカナを含む二文字（「請求」「コピ」「問い」）と、英語の一語（「Excel」）。
+// 「書の」「てい」のような、助詞を含む二文字やひらがなだけの二文字は、どの文にもあるので数えない
+function cluesOf(text: string) {
   const grams = new Set<string>();
   for (const run of text.match(/[一-龯々ァ-ヶーぁ-ゟ]+/g) ?? []) {
     for (let i = 0; i < run.length - 1; i++) {
@@ -67,21 +66,56 @@ export function searchCases(text: string, limit = 5): Post[] {
     }
   }
   const words = new Set((text.match(/[A-Za-z][A-Za-z0-9]+/g) ?? []).map((w) => w.toLowerCase()));
+  return { grams, words, most: grams.size + 2 * words.size };
+}
 
+// 似ているかどうかは、文の重なりだけで決める
+function overlap(text: string, clues: ReturnType<typeof cluesOf>, hay: string, labels: string[]) {
+  const hayLower = hay.toLowerCase();
+  let match = 0;
+  for (const g of clues.grams) if (hay.includes(g)) match += 1;
+  for (const w of clues.words) if (hayLower.includes(w)) match += 2;
+  for (const w of labels) if (w && text.includes(w)) match += 3;
+  return match;
+}
+
+// 悩みの文章に近い社内の投稿を探す（AI に渡す「社内の事例」）。
+// 言葉の重なりで数える簡単なもの。⚠️ 事例が増えたら、意味で探す形（埋め込み）に替える
+export function searchCases(text: string, limit = 5): Post[] {
+  const clues = cluesOf(text);
   return listPosts()
     .map((p) => {
-      const hay = `${p.title}${p.summary}`;
-      const hayLower = hay.toLowerCase();
-      // 似ているかどうかは、文の重なりだけで決める
-      let match = 0;
-      for (const g of grams) if (hay.includes(g)) match += 1;
-      for (const w of words) if (hayLower.includes(w)) match += 2;
-      for (const w of [...p.tags, ...p.tools, p.category]) if (text.includes(w)) match += 3;
+      const match = overlap(text, clues, `${p.title}${p.summary}`, [...p.tags, ...p.tools, p.category]);
       // 広がっている解決策は、並べるときだけ前に出す
       const rank = match + (p.kind === "solution" ? 2 + p.adoptions : 0);
       return { p, match, rank };
     })
     .filter((x) => x.match >= 3)
+    .sort((a, b) => b.rank - a.rank)
+    .slice(0, limit)
+    .map((x) => x.p);
+}
+
+// トップの検索：悩み・問題・課題・解決策のどれを書いても、解決策の投稿だけを返す（ふつうは成功事例）。
+// 投稿そのものの文に加えて、それが解いた困りごとの文とも突き合わせる（「困りごとから探す」が効くように）。
+// 短い言葉（「議事録」）でも見つかるよう、手がかりが少ないときは基準を下げる
+export function searchSolutions(text: string, stage: Stage = "success", limit = 6): Post[] {
+  const q = text.trim();
+  if (!q) return [];
+  const clues = cluesOf(q);
+  const need = Math.max(1, Math.min(3, clues.most));
+  const problems = new Map(listPosts({ kind: "problem" }).map((p) => [p.id, p]));
+  // ひらがなだけの言葉などで手がかりが無いときも、文字どおりの一致は拾う
+  const literal = new Set(listPosts({ q, stage }).map((p) => p.id));
+
+  return listPosts({ stage })
+    .map((p) => {
+      const pr = p.problemId ? problems.get(p.problemId) : undefined;
+      const hay = `${p.title}${p.summary}${pr ? `${pr.title}${pr.summary}` : ""}`;
+      const match = overlap(q, clues, hay, [...p.tags, ...p.tools, p.category]) + (literal.has(p.id) ? 3 : 0);
+      return { p, match, rank: match + p.adoptions };
+    })
+    .filter((x) => x.match >= need)
     .sort((a, b) => b.rank - a.rank)
     .slice(0, limit)
     .map((x) => x.p);

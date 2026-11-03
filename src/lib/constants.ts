@@ -39,6 +39,27 @@ export const STAGES = {
 } as const;
 
 // 段階ごとのリアクション：一緒にやりたい／うちでも使いたい／参考になった
+// 賢者との壁打ちの段。悩みから始めて、実現方法まで一段ずつ進む
+export const FORGE_STEPS = [
+  { key: "worry", label: "悩み", en: "WORRY" },
+  { key: "problem", label: "問題", en: "PROBLEM" },
+  { key: "issue", label: "課題", en: "ISSUE" },
+  { key: "solution", label: "解決策", en: "SOLUTION" },
+  { key: "how", label: "実現方法", en: "HOW" },
+] as const;
+
+// 賢者は返答の頭に、いまの段を【問題】のように書く。画面はそれを札にして、文からは外す。
+// 届く途中の「【問」のような書きかけも、文には出さない
+export function splitStepTag(text: string): { step: number | null; body: string } {
+  const m = text.match(/^\s*【([^】]{0,6})】\s*/);
+  if (m) {
+    const i = FORGE_STEPS.findIndex((s) => s.label === m[1]);
+    return { step: i > 0 ? i : null, body: text.slice(m[0].length) };
+  }
+  if (/^\s*【[^】]{0,6}$/.test(text)) return { step: null, body: "" };
+  return { step: null, body: text };
+}
+
 export const REACTION_OF = { challenge: "join", success: "want", lesson: "want" } as const;
 export type ReactionType = "metoo" | "want" | "join";
 

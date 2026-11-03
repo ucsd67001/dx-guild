@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ChatMessage } from "@/lib/ai";
+import { FORGE_STEPS, splitStepTag } from "@/lib/constants";
+import { StepTrack } from "./StepTrack";
 
 // 賢者との対話。返事は少しずつ届くので、届いたぶんから表示する
 export function ForgeChat({
@@ -94,23 +96,32 @@ export function ForgeChat({
   }
 
   const userTurns = messages.filter((m) => m.role === "user").length;
+  // いまの段は、賢者がこれまでに書いた段の札のうち、いちばん先のもの（札が無ければ「問題」から）
+  const reached = messages.reduce((n, m) => (m.role === "assistant" ? Math.max(n, splitStepTag(m.content).step ?? 0) : n), 1);
 
   return (
     <div className="chat">
+      <StepTrack current={reached} complete={hasPlan} />
       <div className="chat__log" ref={logRef}>
         <div className="bubble bubble--user">
           <span className="bubble__who mono">{userName} · 悩み</span>
           <p>{worry}</p>
         </div>
-        {messages.map((m, i) => (
-          <div key={i} className={`bubble bubble--${m.role}`}>
-            <span className="bubble__who mono">{m.role === "assistant" ? "SAGE · 賢者" : userName}</span>
-            <p>
-              {m.content}
-              {busy === "chat" && i === messages.length - 1 && m.role === "assistant" && <i className="caret" aria-hidden />}
-            </p>
-          </div>
-        ))}
+        {messages.map((m, i) => {
+          const { step, body } = m.role === "assistant" ? splitStepTag(m.content) : { step: null, body: m.content };
+          return (
+            <div key={i} className={`bubble bubble--${m.role}`}>
+              <span className="bubble__who mono">
+                {m.role === "assistant" ? "SAGE · 賢者" : userName}
+                {step !== null && <em className="bubble__step">{FORGE_STEPS[step].label}</em>}
+              </span>
+              <p>
+                {body}
+                {busy === "chat" && i === messages.length - 1 && m.role === "assistant" && <i className="caret" aria-hidden />}
+              </p>
+            </div>
+          );
+        })}
       </div>
 
       {error && <p className="chat__error" role="alert">{error}</p>}
@@ -136,7 +147,7 @@ export function ForgeChat({
               送る <span aria-hidden>→</span>
             </button>
           </div>
-          {busy === "plan" && <p className="small dim">30秒〜1分ほどかかります。あるべき姿・問題・課題・解決策の順に整理しています。</p>}
+          {busy === "plan" && <p className="small dim">30秒〜1分ほどかかります。問題・課題・解決策・実現方法の順に整理しています。</p>}
         </div>
       ) : (
         <p className="small dim">この対話は、始めた人だけが続けられます。</p>

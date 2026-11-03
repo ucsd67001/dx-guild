@@ -1,11 +1,11 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/data";
 import { listForgeSessions } from "@/lib/forge";
 import { aiConnected, MODEL } from "@/lib/ai";
 import { startForge } from "@/lib/actions";
-import { fmtDate } from "@/lib/constants";
 import { WorryForm } from "@/components/WorryForm";
+import { StepTrack } from "@/components/StepTrack";
+import { SessionList } from "@/components/SessionList";
 
 export const metadata: Metadata = { title: "賢者の工房" };
 
@@ -21,15 +21,10 @@ export default async function Forge() {
           <p className="eyebrow">THE SAGE&apos;S FORGE</p>
           <h1 className="page__title">賢者の工房</h1>
           <p className="lead">
-            まだ「なんかめんどう」の段階で大丈夫です。悩みや不満をひとこと書くと、賢者（AI）が質問しながら一緒に掘り下げ、
-            <b>あるべき姿・問題・課題・解決策</b>に整理します。解決策には、実現の方法・ステップ・効果の試算がつきます。
+            まだ「なんかめんどう」の段階で大丈夫です。悩みや不満をひとこと書くと、賢者（AI）が質問しながら、
+            <b>問題・課題・解決策・実現方法</b>へと一段ずつ一緒に掘り下げます。最後は、効果の試算つきの企画書になります。
           </p>
-          <ol className="forge-flow mono">
-            <li>WORRY<span>悩み</span></li>
-            <li>DIALOGUE<span>壁打ち</span></li>
-            <li>PLAN<span>企画書</span></li>
-            <li>SHARE<span>共有</span></li>
-          </ol>
+          <StepTrack />
         </div>
         <div className="frame forge-start">
           <span className="frame__label mono">NEW DIALOGUE</span>
@@ -65,25 +60,5 @@ export default async function Forge() {
         </section>
       )}
     </div>
-  );
-}
-
-function SessionList({ sessions, showWho }: { sessions: ReturnType<typeof listForgeSessions>; showWho?: boolean }) {
-  return (
-    <ul className="sessions">
-      {sessions.map((s) => {
-        const status = s.solutionPostId ? "共有ずみ" : s.plan ? "企画書あり" : "対話中";
-        return (
-          <li key={s.id}>
-            <Link href={`/forge/${s.id}`}>
-              <span className={`status status--${s.solutionPostId ? "shared" : s.plan ? "planned" : "talking"}`}>{status}</span>
-              <span className="sessions__title">{s.plan?.title ?? s.worry}</span>
-              {showWho && <span className="dim small">{s.userName}（{s.teamCode}）</span>}
-              <span className="mono dim small">{fmtDate(s.updatedAt)}</span>
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
   );
 }

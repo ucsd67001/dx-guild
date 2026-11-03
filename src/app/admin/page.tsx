@@ -5,9 +5,10 @@ import { listForgeSessions } from "@/lib/forge";
 import { HOURLY_COST, fmtDate, man, postCode, yen } from "@/lib/constants";
 import { FunnelBars, HBars, WeeklyChart } from "@/components/Charts";
 
-export const metadata: Metadata = { title: "司令室" };
+export const metadata: Metadata = { title: "物見の塔" };
 
-// 管理者ダッシュボード。⚠️ いまはだれでも開ける（ログインが入ったら、管理者だけにする）
+// 物見の塔：管理者ダッシュボード（2026-11-03 に「司令室」から名前を替えた）。
+// ⚠️ いまはだれでも開ける（ログインが入ったら、管理者だけにする）
 export default function Admin() {
   const k = adminKpis();
   const categories = byCategory();
@@ -16,8 +17,8 @@ export default function Admin() {
 
   return (
     <div className="wrap page">
-      <p className="eyebrow">COMMAND ROOM</p>
-      <h1 className="page__title">司令室</h1>
+      <p className="eyebrow">THE WATCHTOWER</p>
+      <h1 className="page__title">物見の塔</h1>
       <p className="lead">IT Div. の悩みと挑戦が、どれだけ生まれ、どれだけ成功して横に広がり、どれだけの時間を生んでいるか。</p>
 
       <section className="stats stats--admin">

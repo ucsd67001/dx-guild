@@ -88,7 +88,7 @@ export default async function PostPage({ params }: Props) {
             <span className="avatar" aria-hidden>{post.authorName.slice(0, 1)}</span>
             <div>
               <b>{post.authorName}</b>
-              <Link href={`/teams/${post.teamId}`} className="dim"> ／ {post.teamName}（{post.teamCode}）</Link>
+              <span className="dim"> ／ {post.teamName}（{post.teamCode}）</span>
               <p className="dim small">
                 {isProblem
                   ? "同じことで困っていたら、下のボタンで知らせてください。"
@@ -249,7 +249,7 @@ export default async function PostPage({ params }: Props) {
                 <ul>
                   {reactingTeams.map((t) => (
                     <li key={t.teamId}>
-                      <Link href={`/teams/${t.teamId}`}>{t.teamName}</Link>
+                      <span>{t.teamName}</span>
                       <span className="mono dim">{t.people}</span>
                     </li>
                   ))}
@@ -257,22 +257,6 @@ export default async function PostPage({ params }: Props) {
               </div>
             )}
 
-            {adoptions.length > 0 && (
-              <div className="panel__list">
-                <span className="panel__label mono">ADOPTED BY</span>
-                <ul className="adoptions">
-                  {adoptions.map((a) => (
-                    <li key={a.id}>
-                      <div>
-                        <Link href={`/teams/${a.teamId}`}>{a.teamName}</Link>
-                        {a.note && <p className="small dim">{a.note}</p>}
-                      </div>
-                      <span className="mono dim">{fmtDate(a.createdAt).slice(5)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
         </aside>
       </div>
