@@ -742,7 +742,7 @@ select option { background: var(--surface); color: var(--ink); }
 .footer .mono { font-size: 10.5px; letter-spacing: 0.14em; }
 
 /* ============================================================
-   v0.2：賢者の工房・ゲーミフィケーション・物見の塔
+   v0.2：賢者の工房・ゲーミフィケーション・ギルマスの執務室
    ============================================================ */
 
 /* ヘッダーのレベル */
@@ -945,7 +945,7 @@ select option { background: var(--surface); color: var(--ink); }
 .rules td { padding: 6px 0; border-bottom: 1px dashed var(--line); }
 .rules td.mono { text-align: right; padding-left: 12px; white-space: nowrap; }
 
-/* ── 物見の塔（管理者の頁。2026-11-03 に「司令室」から名前を替えた） ── */
+/* ── ギルマスの執務室（管理者の頁。旧名は「司令室」→「物見の塔」。2026-11-04 に今の名前に） ── */
 .stats--admin { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .stats--admin .stat:nth-child(4) { border-left: none; }
 .stats--admin .stat:nth-child(n + 4) { border-top: 1px solid var(--line); }

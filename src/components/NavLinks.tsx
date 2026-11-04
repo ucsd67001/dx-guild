@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// ホームへはロゴから戻る。管理者の「物見の塔」は、フッターの小さな入口から
+// ホームへはロゴから戻る。管理者の「ギルマスの執務室」は、フッターの小さな入口から
 const LINKS = [
   { href: "/explore", label: "事例を探す", en: "CASES" },
   { href: "/forge", label: "賢者と壁打ち", en: "FORGE" },

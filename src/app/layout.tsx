@@ -60,7 +60,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <span className="mono dim">{PRODUCT.en} / {PRODUCT.version} — LOCAL PROTOTYPE</span>
             <span className="dim">{PRODUCT.tagline}</span>
             <span className="footer__links mono">
-              <Link href="/admin">WATCHTOWER / 物見の塔</Link>
+              <Link href="/admin">GUILDMASTER / ギルマスの執務室</Link>
             </span>
           </div>
         </footer>
