@@ -2,7 +2,7 @@ import { db } from "./db";
 import { listPosts } from "./data";
 import { TOOLS, CATEGORIES, HOURLY_COST } from "./constants";
 
-// ギルマスの執務室（管理者ダッシュボード）の数字
+// ギルマスの部屋（管理者ダッシュボード）の数字
 
 export type WeekBucket = { label: string; problems: number; solutions: number };
 

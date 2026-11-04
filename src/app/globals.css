@@ -138,8 +138,8 @@ button { cursor: pointer; }
 }
 .header__inner { display: flex; align-items: center; gap: 36px; height: var(--header-h); }
 
-.logo { display: flex; align-items: center; gap: 4px; }
-.logo__word { font-size: 22px; font-weight: 700; letter-spacing: 0.01em; line-height: 1; text-shadow: 0 0 14px rgba(34, 211, 238, 0.35); }
+.logo { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.logo__word { font-size: 22px; font-weight: 700; white-space: nowrap; letter-spacing: 0.01em; line-height: 1; text-shadow: 0 0 14px rgba(34, 211, 238, 0.35); }
 .logo__dot {
   width: 8px; height: 8px; border-radius: 50%;
   background: var(--accent);
@@ -742,10 +742,16 @@ select option { background: var(--surface); color: var(--ink); }
 .footer .mono { font-size: 10.5px; letter-spacing: 0.14em; }
 
 /* ============================================================
-   v0.2：賢者の工房・ゲーミフィケーション・ギルマスの執務室
+   v0.2：賢者の工房・ゲーミフィケーション・ギルマスの部屋
    ============================================================ */
 
 /* ヘッダーのレベル */
+.gmlink { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-3); white-space: nowrap; }
+.gmlink__en { display: none; font-size: 10px; letter-spacing: 0.12em; padding: 1px 5px; border: 1px solid var(--line-2); border-radius: var(--radius); }
+/* ヘッダーが詰まるので、「USER」の札は出さない（選ぶ欄に名前が出ている） */
+.switcher__label { display: none; }
+.gmlink:hover { color: var(--accent-ink); }
+.gmlink:hover .gmlink__en { border-color: var(--accent-line); }
 .lvchip { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: var(--radius); background: var(--surface); }
 .lvchip:hover { border-color: var(--ink); }
 .lvchip__lv { font-size: 12px; font-weight: 600; }
@@ -945,7 +951,7 @@ select option { background: var(--surface); color: var(--ink); }
 .rules td { padding: 6px 0; border-bottom: 1px dashed var(--line); }
 .rules td.mono { text-align: right; padding-left: 12px; white-space: nowrap; }
 
-/* ── ギルマスの執務室（管理者の頁。旧名は「司令室」→「物見の塔」。2026-11-04 に今の名前に） ── */
+/* ── ギルマスの部屋（管理者の頁。旧名は「司令室」→「物見の塔」→「ギルマスの執務室」。2026-11-04 に今の名前に） ── */
 .stats--admin { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .stats--admin .stat:nth-child(4) { border-left: none; }
 .stats--admin .stat:nth-child(n + 4) { border-top: 1px solid var(--line); }
@@ -1126,7 +1132,10 @@ a.example { display: inline-block; }
 }
 @media (max-width: 1040px) {
   .nav__en, .switcher__label { display: none; }
-  .nav { gap: 20px; }
+  /* ヘッダーが一列に収まらないので、メニューを二段目に下ろす（スマホと同じ形） */
+  .header__inner { flex-wrap: wrap; height: auto; gap: 0 20px; padding-top: 12px; }
+  .nav { order: 3; width: 100%; gap: 22px; }
+  .nav a { padding: 10px 0 12px; }
 }
 @media (max-width: 1040px) {
   .forge-hero, .forge-room, .ranking-layout, .admin-grid, .status-card { grid-template-columns: 1fr; }
@@ -1139,7 +1148,8 @@ a.example { display: inline-block; }
   .stats--admin .stat:nth-child(-n + 2) { border-top: none; }
 }
 @media (max-width: 760px) {
-  .lvchip__bar { display: none; }
+  .lvchip__bar, .gmlink__ja { display: none; }
+  .gmlink__en { display: inline; }
   .stats--admin .stat { padding: 16px 14px; }
   .stats--admin .stat__value { font-size: 26px; }
   .share__form { flex-direction: column; align-items: flex-start; }

@@ -41,6 +41,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             </Link>
             <NavLinks />
             <div className="header__right">
+              {/* 管理者の入口。メニューより目立たせない（2026-11-04、フッターだけでは見つからなかったため） */}
+              <Link href="/admin" className="gmlink" title="ギルマスの部屋（管理者）">
+                <span className="gmlink__en mono">GM</span>
+                <span className="gmlink__ja">ギルマスの部屋</span>
+              </Link>
               {hero && (
                 <Link href="/me" className="lvchip" title={`${hero.title}・${hero.xp} XP`}>
                   <span className="lvchip__lv mono">Lv{hero.level}</span>
@@ -60,7 +65,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <span className="mono dim">{PRODUCT.en} / {PRODUCT.version} — LOCAL PROTOTYPE</span>
             <span className="dim">{PRODUCT.tagline}</span>
             <span className="footer__links mono">
-              <Link href="/admin">GUILDMASTER / ギルマスの執務室</Link>
+              <Link href="/admin">GUILDMASTER / ギルマスの部屋</Link>
             </span>
           </div>
         </footer>

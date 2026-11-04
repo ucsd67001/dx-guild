@@ -5,9 +5,9 @@ import { listForgeSessions } from "@/lib/forge";
 import { HOURLY_COST, fmtDate, man, postCode, yen } from "@/lib/constants";
 import { FunnelBars, HBars, WeeklyChart } from "@/components/Charts";
 
-export const metadata: Metadata = { title: "ギルマスの執務室" };
+export const metadata: Metadata = { title: "ギルマスの部屋" };
 
-// ギルマスの執務室：管理者ダッシュボード（旧名は「司令室」→「物見の塔」。2026-11-04 に今の名前に）。
+// ギルマスの部屋：管理者ダッシュボード（旧名は「司令室」→「物見の塔」→「ギルマスの執務室」。2026-11-04 に今の名前に）。
 // ⚠️ いまはだれでも開ける（ログインが入ったら、管理者だけにする）
 export default function Admin() {
   const k = adminKpis();
@@ -17,8 +17,8 @@ export default function Admin() {
 
   return (
     <div className="wrap page">
-      <p className="eyebrow">GUILDMASTER’S OFFICE</p>
-      <h1 className="page__title">ギルマスの執務室</h1>
+      <p className="eyebrow">GUILDMASTER’S ROOM</p>
+      <h1 className="page__title">ギルマスの部屋</h1>
       <p className="lead">IT Div. の悩みと挑戦が、どれだけ生まれ、どれだけ成功して横に広がり、どれだけの時間を生んでいるか。</p>
 
       <section className="stats stats--admin">
